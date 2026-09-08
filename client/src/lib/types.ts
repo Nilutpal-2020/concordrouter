@@ -55,7 +55,7 @@ export interface ChunkSegment {
   id: string;
   index: number;
   source: string;
-  type: 'paragraph' | 'sentence' | 'header' | 'code' | 'bullet';
+  type: 'paragraph' | 'sentence' | 'header' | 'code' | 'bullet' | 'blockquote' | 'table' | 'list_group';
   content: string;
 }
 

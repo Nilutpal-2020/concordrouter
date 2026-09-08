@@ -20,7 +20,32 @@ import {
   Check,
   Split,
   AlertTriangle,
+  Code2,
+  Quote,
+  TableProperties,
+  List,
 } from 'lucide-react';
+
+/** Returns icon, label, and extra CSS for a segment type */
+const getSegmentMeta = (type: ChunkSegment['type']) => {
+  switch (type) {
+    case 'code':
+      return { icon: Code2, label: 'Code', extraClass: 'bg-black/40 border-emerald-500/20', textClass: 'font-mono text-emerald-300/80 text-[11px]' };
+    case 'blockquote':
+      return { icon: Quote, label: 'Quote', extraClass: 'border-l-2 border-l-amber-500/40', textClass: '' };
+    case 'table':
+      return { icon: TableProperties, label: 'Table', extraClass: 'bg-slate-950/60 border-cyan-500/20', textClass: 'font-mono text-[11px]' };
+    case 'header':
+      return { icon: Layers, label: 'Heading', extraClass: '', textClass: 'font-semibold text-white' };
+    case 'bullet':
+    case 'list_group':
+      return { icon: List, label: 'List Item', extraClass: '', textClass: '' };
+    case 'sentence':
+      return { icon: null, label: 'Sentence', extraClass: '', textClass: '' };
+    default:
+      return { icon: null, label: 'Paragraph', extraClass: '', textClass: '' };
+  }
+};
 
 interface MergeWorkbenchProps {
   isOpen: boolean;
@@ -329,21 +354,28 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                     </button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {segmentsA.map((seg) => (
-                      <div
-                        key={seg.id}
-                        onClick={() => handleAddSegment(seg)}
-                        className="group relative rounded-xl bg-slate-900/80 hover:bg-cyan-950/30 border border-slate-800 hover:border-cyan-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all"
-                      >
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
-                          <span className="uppercase">{seg.type}</span>
-                          <span className="opacity-0 group-hover:opacity-100 text-cyan-400 flex items-center gap-1 font-sans transition-opacity">
-                            <Plus className="h-3 w-3" /> Pick
-                          </span>
+                    {segmentsA.map((seg) => {
+                      const meta = getSegmentMeta(seg.type);
+                      const SegIcon = meta.icon;
+                      return (
+                        <div
+                          key={seg.id}
+                          onClick={() => handleAddSegment(seg)}
+                          className={`group relative rounded-xl bg-slate-900/80 hover:bg-cyan-950/30 border border-slate-800 hover:border-cyan-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all ${meta.extraClass}`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+                            <span className="flex items-center gap-1 uppercase">
+                              {SegIcon && <SegIcon className="h-3 w-3" />}
+                              {meta.label}
+                            </span>
+                            <span className="opacity-0 group-hover:opacity-100 text-cyan-400 flex items-center gap-1 font-sans transition-opacity">
+                              <Plus className="h-3 w-3" /> Pick
+                            </span>
+                          </div>
+                          <div className={`whitespace-pre-wrap ${meta.textClass}`}>{seg.content}</div>
                         </div>
-                        <div className="whitespace-pre-wrap">{seg.content}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -359,21 +391,28 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                     </button>
                   </div>
                   <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                    {segmentsB.map((seg) => (
-                      <div
-                        key={seg.id}
-                        onClick={() => handleAddSegment(seg)}
-                        className="group relative rounded-xl bg-slate-900/80 hover:bg-purple-950/30 border border-slate-800 hover:border-purple-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all"
-                      >
-                        <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
-                          <span className="uppercase">{seg.type}</span>
-                          <span className="opacity-0 group-hover:opacity-100 text-purple-400 flex items-center gap-1 font-sans transition-opacity">
-                            <Plus className="h-3 w-3" /> Pick
-                          </span>
+                    {segmentsB.map((seg) => {
+                      const meta = getSegmentMeta(seg.type);
+                      const SegIcon = meta.icon;
+                      return (
+                        <div
+                          key={seg.id}
+                          onClick={() => handleAddSegment(seg)}
+                          className={`group relative rounded-xl bg-slate-900/80 hover:bg-purple-950/30 border border-slate-800 hover:border-purple-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all ${meta.extraClass}`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+                            <span className="flex items-center gap-1 uppercase">
+                              {SegIcon && <SegIcon className="h-3 w-3" />}
+                              {meta.label}
+                            </span>
+                            <span className="opacity-0 group-hover:opacity-100 text-purple-400 flex items-center gap-1 font-sans transition-opacity">
+                              <Plus className="h-3 w-3" /> Pick
+                            </span>
+                          </div>
+                          <div className={`whitespace-pre-wrap ${meta.textClass}`}>{seg.content}</div>
                         </div>
-                        <div className="whitespace-pre-wrap">{seg.content}</div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>

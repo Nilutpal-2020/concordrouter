@@ -103,7 +103,7 @@ func AlignNeedlemanWunsch(segsA, segsB []domain.ChunkSegment) AlignmentResult {
 			leftSeg := segsA[i-1]
 			rightSeg := segsB[j-1]
 
-			relation := classifyRelation(leftSeg.Content, rightSeg.Content, sim)
+			relation := classifyRelationTyped(leftSeg.Content, rightSeg.Content, sim, leftSeg.Type, rightSeg.Type)
 
 			rawPairs = append(rawPairs, AlignedPair{
 				ID:         fmt.Sprintf("pair_%d_%d", i-1, j-1),
@@ -163,8 +163,42 @@ func AlignNeedlemanWunsch(segsA, segsB []domain.ChunkSegment) AlignmentResult {
 	}
 }
 
-// classifyRelation determines agreement, paraphrase, conflict, or one-sided difference
+// classifyRelation determines agreement, paraphrase, conflict, or one-sided difference.
+// When both chunks share the same structural type, scoring thresholds adjust accordingly:
+// - Code blocks use stricter thresholds (paraphrase is less meaningful for code)
+// - Tables compare structural similarity alongside content
 func classifyRelation(textA, textB string, sim float64) string {
+	return classifyRelationTyped(textA, textB, sim, "", "")
+}
+
+// classifyRelationTyped is the type-aware variant used by the alignment pipeline.
+func classifyRelationTyped(textA, textB string, sim float64, typeA, typeB string) string {
+	// Code-to-code: use stricter thresholds since paraphrase doesn't apply to code
+	if typeA == "code" && typeB == "code" {
+		if sim >= 0.85 {
+			return "agree"
+		}
+		if sim >= 0.50 {
+			// Even moderate code similarity is meaningful
+			return "paraphrase"
+		}
+		return "conflict"
+	}
+
+	// Table-to-table: structural similarity matters more
+	if typeA == "table" && typeB == "table" {
+		colsA := countTableColumns(textA)
+		colsB := countTableColumns(textB)
+		if sim >= 0.65 && colsA == colsB {
+			return "agree"
+		}
+		if sim >= 0.30 {
+			return "paraphrase"
+		}
+		return "conflict"
+	}
+
+	// Default prose thresholds
 	if sim >= 0.70 {
 		return "agree"
 	}
@@ -179,6 +213,18 @@ func classifyRelation(textA, textB string, sim float64) string {
 		return "conflict"
 	}
 	return "conflict"
+}
+
+// countTableColumns counts the number of pipe-delimited columns in a markdown table
+func countTableColumns(text string) int {
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.Contains(trimmed, "|") && !strings.Contains(trimmed, "---") {
+			return strings.Count(trimmed, "|") + 1
+		}
+	}
+	return 0
 }
 
 func hasContradictionMarkers(textA, textB string) bool {

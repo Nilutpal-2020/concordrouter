@@ -109,7 +109,7 @@ type ChunkSegment struct {
 	ID        string `json:"id"`
 	Index     int    `json:"index"`
 	Source    string `json:"source"` // "left" or "right" or provider/model name
-	Type      string `json:"type"`   // "paragraph", "sentence", "header", "code", "bullet"
+	Type      string `json:"type"`   // "paragraph", "sentence", "header", "code", "bullet", "blockquote", "table", "list_group"
 	Content   string `json:"content"`
 }
 

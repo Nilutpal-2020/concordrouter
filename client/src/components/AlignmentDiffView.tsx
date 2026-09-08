@@ -2,7 +2,52 @@
 
 import React from 'react';
 import { AlignedPair } from '@/lib/types';
-import { Check, Plus, ArrowRight, GitCommit, Split, Sparkles } from 'lucide-react';
+import { Check, Plus, ArrowRight, GitCommit, Split, Sparkles, Code2, Quote, TableProperties } from 'lucide-react';
+import { ChunkSegment } from '@/lib/types';
+
+/** Renders a chunk with type-aware visual styling */
+const ChunkContent: React.FC<{ chunk: ChunkSegment }> = ({ chunk }) => {
+  switch (chunk.type) {
+    case 'code':
+      return (
+        <div className="rounded-lg bg-black/60 border border-slate-700/50 p-2.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono mb-1.5">
+            <Code2 className="h-3 w-3" />
+            <span>CODE BLOCK</span>
+          </div>
+          <pre className="text-[11px] font-mono text-emerald-300/90 whitespace-pre-wrap leading-relaxed">{chunk.content}</pre>
+        </div>
+      );
+    case 'blockquote':
+      return (
+        <div className="border-l-2 border-amber-500/50 pl-3 py-1">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono mb-1">
+            <Quote className="h-3 w-3" />
+            <span>BLOCKQUOTE</span>
+          </div>
+          <div className="whitespace-pre-wrap text-slate-300 italic">{chunk.content}</div>
+        </div>
+      );
+    case 'table':
+      return (
+        <div className="rounded-lg bg-slate-950/50 border border-slate-700/40 p-2.5 overflow-x-auto">
+          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-mono mb-1.5">
+            <TableProperties className="h-3 w-3" />
+            <span>TABLE</span>
+          </div>
+          <pre className="text-[11px] font-mono text-slate-200 whitespace-pre-wrap leading-relaxed">{chunk.content}</pre>
+        </div>
+      );
+    case 'header':
+      return (
+        <div className="whitespace-pre-wrap font-semibold text-white">{chunk.content}</div>
+      );
+    default:
+      return (
+        <div className="whitespace-pre-wrap">{chunk.content}</div>
+      );
+  }
+};
 
 interface AlignmentDiffViewProps {
   pairs: AlignedPair[];
@@ -114,7 +159,7 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
                 }`}
               >
                 {pair.leftChunk ? (
-                  <div className="whitespace-pre-wrap">{pair.leftChunk.content}</div>
+                  <ChunkContent chunk={pair.leftChunk} />
                 ) : (
                   <span>[No corresponding chunk in {modelALabel}]</span>
                 )}
@@ -129,7 +174,7 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
                 }`}
               >
                 {pair.rightChunk ? (
-                  <div className="whitespace-pre-wrap">{pair.rightChunk.content}</div>
+                  <ChunkContent chunk={pair.rightChunk} />
                 ) : (
                   <span>[No corresponding chunk in {modelBLabel}]</span>
                 )}

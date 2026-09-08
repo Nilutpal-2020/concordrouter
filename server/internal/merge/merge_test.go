@@ -78,3 +78,67 @@ Mutexes provide memory locking.`
 		t.Fatalf("Expected similarity matrix rows %d, got %d", len(segsA), len(alignment.SimilarityMatrix))
 	}
 }
+
+func TestNeedlemanWunschAlignment_MixedTypes(t *testing.T) {
+	docA := "### Setup\n\nInstall Go 1.21 or later.\n\n" +
+		"```go\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"hello\")\n}\n```" +
+		"\n\n| Feature | Status |\n| --- | --- |\n| Streaming | Done |\n| Merge | WIP |"
+
+	docB := "### Installation\n\nInstall Go version 1.21+.\n\n" +
+		"```go\npackage main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"hello world\")\n}\n```" +
+		"\n\n| Feature | Status |\n| --- | --- |\n| Streaming | Done |\n| Merge | Done |"
+
+	segsA := SegmentText(docA, "modelA")
+	segsB := SegmentText(docB, "modelB")
+
+	if len(segsA) == 0 || len(segsB) == 0 {
+		t.Fatalf("Expected segments from both docs, got A=%d B=%d", len(segsA), len(segsB))
+	}
+
+	alignment := AlignNeedlemanWunsch(segsA, segsB)
+
+	if len(alignment.Pairs) == 0 {
+		t.Fatalf("Expected alignment pairs for mixed-type docs, got 0")
+	}
+
+	// Verify code-to-code and table-to-table alignments exist
+	hasCodePair := false
+	hasTablePair := false
+	for _, pair := range alignment.Pairs {
+		if pair.LeftChunk != nil && pair.RightChunk != nil {
+			if pair.LeftChunk.Type == "code" && pair.RightChunk.Type == "code" {
+				hasCodePair = true
+			}
+			if pair.LeftChunk.Type == "table" && pair.RightChunk.Type == "table" {
+				hasTablePair = true
+			}
+		}
+	}
+
+	if !hasCodePair {
+		t.Errorf("Expected code-to-code alignment pair in mixed-type alignment")
+	}
+	if !hasTablePair {
+		t.Errorf("Expected table-to-table alignment pair in mixed-type alignment")
+	}
+}
+
+func TestClassifyRelationTyped_Code(t *testing.T) {
+	codeA := "func main() { fmt.Println(\"hello\") }"
+	codeB := "func main() { fmt.Println(\"hello\") }"
+	sim := CosineSimilarity(codeA, codeB)
+
+	result := classifyRelationTyped(codeA, codeB, sim, "code", "code")
+	if result != "agree" {
+		t.Errorf("Expected 'agree' for identical code, got '%s' (sim=%f)", result, sim)
+	}
+
+	codeC := "func setup() { log.Fatal(\"error\") }"
+	simDiff := CosineSimilarity(codeA, codeC)
+	resultDiff := classifyRelationTyped(codeA, codeC, simDiff, "code", "code")
+	// Should be paraphrase or conflict, not agree
+	if resultDiff == "agree" {
+		t.Errorf("Expected non-agree for different code, got '%s' (sim=%f)", resultDiff, simDiff)
+	}
+}
+
