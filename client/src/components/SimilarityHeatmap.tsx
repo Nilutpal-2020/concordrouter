@@ -35,18 +35,18 @@ export const SimilarityHeatmap: React.FC<SimilarityHeatmapProps> = ({
 
   // Color generator for cosine similarity (0.0 to 1.0)
   const getCellColor = (score: number) => {
-    if (score >= 0.8) return 'bg-emerald-500 text-emerald-950';
-    if (score >= 0.6) return 'bg-teal-500 text-teal-950';
-    if (score >= 0.4) return 'bg-amber-500 text-amber-950';
-    if (score >= 0.2) return 'bg-blue-600/40 text-blue-200';
-    return 'bg-slate-900 text-slate-600';
+    if (score >= 0.8) return 'bg-emerald-500 text-black font-bold';
+    if (score >= 0.6) return 'bg-amber-400 text-black font-bold';
+    if (score >= 0.4) return 'bg-amber-600/70 text-white font-medium';
+    if (score >= 0.2) return 'bg-[#1e2330] text-amber-200/80';
+    return 'bg-[#0f1218] text-slate-600';
   };
 
   return (
     <div className="flex flex-col space-y-4 p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Grid className="h-4 w-4 text-cyan-400" />
+          <Grid className="h-4 w-4 text-amber-400" />
           <h4 className="text-xs font-bold text-white uppercase tracking-wider">
             Pairwise Semantic Matrix
           </h4>
@@ -56,10 +56,10 @@ export const SimilarityHeatmap: React.FC<SimilarityHeatmapProps> = ({
             <span className="h-2.5 w-2.5 rounded-sm bg-emerald-500" /> High Match (≥80%)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" /> Paraphrase (40-79%)
+            <span className="h-2.5 w-2.5 rounded-sm bg-amber-400" /> Paraphrase (40-79%)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-slate-900 border border-slate-800" /> Distinct (&lt;40%)
+            <span className="h-2.5 w-2.5 rounded-sm bg-[#1e2330]" /> Divergent (&lt;40%)
           </span>
         </div>
       </div>

@@ -55,16 +55,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onNavigate('arena')}
           className="flex items-center gap-3 text-left group"
         >
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-600 via-violet-600 to-cyan-500 shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-            <Layers className="h-5 w-5 text-white" />
-            <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 opacity-0 group-hover:opacity-40 blur-sm transition-opacity" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-400 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+            <Layers className="h-5 w-5 text-black font-bold" />
+            <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-40 blur-sm transition-opacity" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-indigo-200 transition-colors">
+              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-amber-300 transition-colors">
                 ConcordRouter
               </span>
-              <span className="rounded-md bg-gradient-to-r from-indigo-500/20 to-cyan-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-indigo-300 border border-indigo-500/30">
+              <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold text-amber-300 border border-amber-500/20">
                 PROMPT ARENA
               </span>
             </div>
@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
 
         {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-slate-950/60 p-1 rounded-xl border border-white/[0.06]">
+        <nav className="hidden md:flex items-center gap-1 bg-[#12151c]/90 p-1 rounded-xl border border-white/[0.06]">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
             return (
@@ -82,7 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => onNavigate(item.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm shadow-indigo-500/20 font-semibold'
+                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-sm font-bold'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
                 }`}
               >
@@ -96,17 +96,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Right Action Bar */}
       <div className="flex items-center gap-2">
-        {/* Model Selector Bar (Visible on Arena or accessible from any page) */}
+        {/* Model Selector Bar */}
         <button
           onClick={onOpenModelSelector}
-          className="flex items-center gap-2 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 px-3 py-1.5 border border-white/[0.08] transition-all text-xs font-medium text-slate-200 shadow-sm"
+          className="flex items-center gap-2 rounded-xl bg-[#13161f] hover:bg-[#1a1f2c] px-3 py-1.5 border border-white/[0.08] transition-all text-xs font-medium text-slate-200 shadow-sm hover:border-amber-500/30"
           title="Select active models for fan-out"
         >
           <div className="flex -space-x-1.5">
             {selectedModels.map((m, idx) => (
               <span
                 key={idx}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-slate-800 ring-2 ring-slate-950 text-[10px] uppercase font-bold text-indigo-300 border border-slate-700"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1e2330] ring-2 ring-[#090b0e] text-[10px] uppercase font-bold text-amber-300 border border-white/[0.08]"
               >
                 {m.providerId.slice(0, 1)}
               </span>
@@ -115,29 +115,29 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="hidden sm:inline">
             {selectedModels.length} Models
           </span>
-          <span className="text-slate-400 text-[10px] bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700">
-            Configure
+          <span className="text-amber-400 text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 font-mono font-semibold">
+            Select
           </span>
         </button>
 
         {/* BYOA Key Vault */}
         <button
           onClick={onOpenSettings}
-          className="relative flex items-center gap-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 px-3 py-1.5 border border-white/[0.08] text-xs font-medium text-slate-200 transition-all shadow-sm"
+          className="relative flex items-center gap-1.5 rounded-xl bg-[#13161f] hover:bg-[#1a1f2c] px-3 py-1.5 border border-white/[0.08] text-xs font-medium text-slate-200 transition-all shadow-sm hover:border-amber-500/30"
           title="BYOA Provider Keys & Endpoints (Encrypted at Rest)"
         >
           <Key className="h-3.5 w-3.5 text-amber-400" />
-          <span className="hidden sm:inline">Keys</span>
-          <span className="rounded-full bg-slate-800 px-1.5 py-0.2 text-[10px] font-mono text-emerald-400 border border-emerald-500/20">
+          <span className="hidden sm:inline">Key Vault</span>
+          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-mono text-emerald-400 border border-emerald-500/20">
             {connectedCount}
           </span>
         </button>
 
-        {/* Launch Arena Button when on a product view */}
+        {/* Launch Arena Button or New Chat */}
         {currentView !== 'arena' ? (
           <button
             onClick={() => onNavigate('arena')}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md shadow-indigo-500/25 transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-1.5 text-xs font-bold text-black shadow-md shadow-amber-500/20 transition-all active:scale-[0.98]"
           >
             <span>Open Arena</span>
             <ChevronRight className="h-3.5 w-3.5" />
@@ -145,10 +145,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : (
           <button
             onClick={onNewChat}
-            className="flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 rounded-xl bg-[#181d27] hover:bg-[#202634] border border-white/[0.08] hover:border-amber-500/30 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all active:scale-[0.98]"
           >
-            <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">New Arena Session</span>
+            <Plus className="h-3.5 w-3.5 text-amber-400" />
+            <span className="hidden sm:inline">New Session</span>
           </button>
         )}
       </div>

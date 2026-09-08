@@ -408,13 +408,18 @@ export default function ArenaPage() {
             />
 
             {/* Arena Stage */}
-            <main className="flex flex-1 flex-col overflow-hidden">
+            <main className="flex flex-1 flex-col overflow-hidden bg-[#090b0e]">
               {/* Secondary Sub-Header */}
-              <div className="flex items-center justify-between px-6 py-2.5 border-b border-white/[0.06] bg-slate-950/40 text-xs text-slate-400">
-                <div className="flex items-center gap-2 truncate">
-                  <span className="font-semibold text-slate-200 truncate">{activeThreadTitle}</span>
+              <div className="flex items-center justify-between px-6 py-2.5 border-b border-white/[0.06] bg-[#0c0f16]/90 text-xs text-slate-400">
+                <div className="flex items-center gap-2.5 truncate">
+                  <span className="font-bold text-slate-200 truncate">{activeThreadTitle}</span>
+                  {turns.length > 0 && (
+                    <span className="rounded-full bg-[#161a24] text-slate-400 border border-white/[0.08] px-2 py-0.5 text-[10px] font-mono">
+                      Turn {turns.length}
+                    </span>
+                  )}
                   {merges.length > 0 && (
-                    <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.2 text-[10px] font-mono">
+                    <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono">
                       {merges.length} {merges.length === 1 ? 'merge' : 'merges'}
                     </span>
                   )}
@@ -423,7 +428,7 @@ export default function ArenaPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsTemplatesOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-slate-900/80 hover:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-indigo-300 border border-indigo-500/20 transition-colors"
+                    className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-amber-300 border border-amber-500/20 transition-colors"
                   >
                     <Sparkles className="h-3 w-3" />
                     <span>Templates</span>
@@ -432,7 +437,7 @@ export default function ArenaPage() {
                   {merges.length > 0 && (
                     <button
                       onClick={() => setIsMergeHistoryOpen(true)}
-                      className="flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-emerald-300 border border-emerald-500/20 transition-colors"
+                      className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-emerald-300 border border-emerald-500/20 transition-colors"
                     >
                       <History className="h-3 w-3" />
                       <span>Merge History</span>
@@ -441,7 +446,7 @@ export default function ArenaPage() {
 
                   <button
                     onClick={() => setIsExportOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 px-2.5 py-1 text-[11px] font-medium text-slate-300 border border-white/[0.08] transition-colors"
+                    className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-slate-300 border border-white/[0.08] transition-colors"
                   >
                     <Download className="h-3 w-3" />
                     <span>Export</span>
@@ -451,7 +456,31 @@ export default function ArenaPage() {
 
               {/* Responses Arena Canvas */}
               <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-                <div className="mx-auto max-w-7xl h-full flex flex-col">
+                <div className="mx-auto max-w-7xl h-full flex flex-col space-y-4">
+                  {/* Current Active User Prompt Card (if turns exist) */}
+                  {turns.length > 0 && (
+                    <div className="rounded-2xl bg-[#11141b]/90 border border-white/[0.08] p-4 shadow-lg backdrop-blur-sm">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
+                          Active Prompt Turn #{turns.length}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          {selectedModels.map((m, idx) => (
+                            <span
+                              key={idx}
+                              className="rounded bg-black/40 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 border border-white/[0.06]"
+                            >
+                              {m.model}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-100 font-medium whitespace-pre-wrap leading-relaxed">
+                        {turns[turns.length - 1]?.userPrompt}
+                      </p>
+                    </div>
+                  )}
+
                   <ArenaPanes
                     prompt={turns[turns.length - 1]?.userPrompt || promptInput}
                     selectedModels={selectedModels}
@@ -459,6 +488,12 @@ export default function ArenaPage() {
                     isStreaming={isStreaming}
                     onRetryPane={handleRetryPane}
                     onOpenMerge={handleOpenMerge}
+                    onSelectPromptTemplate={(p) => {
+                      setPromptInput(p);
+                      if (textareaRef.current) {
+                        textareaRef.current.focus();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -479,17 +514,17 @@ export default function ArenaPage() {
                       }}
                       rows={1}
                       placeholder={`Ask ${selectedModels.length} models simultaneously... (Enter to fan-out, Shift+Enter for newline)`}
-                      className="w-full rounded-2xl bg-slate-900/90 border border-white/[0.1] pl-4 pr-28 py-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-xl resize-none font-sans"
+                      className="w-full rounded-2xl bg-[#12161f] border border-white/[0.1] pl-4 pr-32 py-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-xl resize-none font-sans"
                     />
 
                     <div className="absolute right-2.5 flex items-center gap-1.5">
                       <button
                         type="button"
                         onClick={() => setIsTemplatesOpen(true)}
-                        className="p-1.5 text-slate-400 hover:text-indigo-300 transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-amber-300 transition-colors"
                         title="Browse prompt templates"
                       >
-                        <Sparkles className="h-4 w-4 text-indigo-400" />
+                        <Sparkles className="h-4 w-4 text-amber-400" />
                       </button>
 
                       {isStreaming ? (
@@ -505,7 +540,7 @@ export default function ArenaPage() {
                         <button
                           type="submit"
                           disabled={!promptInput.trim()}
-                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-indigo-600/30 transition-all active:scale-[0.98]"
+                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed px-3.5 py-2 text-xs font-bold text-black shadow-md shadow-amber-500/10 transition-all active:scale-[0.98]"
                         >
                           <Send className="h-3.5 w-3.5" />
                           <span className="hidden sm:inline">Fan Out</span>

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Thread, ProviderStatus } from '@/lib/types';
-import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X, Shield } from 'lucide-react';
 
 interface SidebarProps {
   threads: Thread[];
@@ -26,13 +26,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
 }) => {
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-slate-800/80 bg-slate-950/80 p-3 text-slate-300 select-none">
+    <aside className="flex h-full w-64 flex-col border-r border-white/[0.06] bg-[#0c0f15]/95 p-3 text-slate-300 select-none">
       {/* New Session Button */}
       <button
         onClick={onNewThread}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 py-2.5 px-3 text-xs font-semibold text-white shadow-md shadow-blue-500/20 transition-all active:scale-[0.98]"
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-2.5 px-3 text-xs font-bold text-black shadow-md shadow-amber-500/10 transition-all active:scale-[0.98]"
       >
-        <Plus className="h-4 w-4" />
+        <Plus className="h-4 w-4 stroke-[2.5]" />
         <span>New Arena Turn</span>
       </button>
 
@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           placeholder="Search prompts & turns..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-xl bg-slate-900 border border-slate-800 pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+          className="w-full rounded-xl bg-[#13161f] border border-white/[0.08] pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:border-amber-500/60 focus:outline-none"
         />
         {searchQuery && (
           <button
@@ -63,8 +63,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="mt-1 space-y-1">
           {threads.length === 0 ? (
-            <div className="px-3 py-4 text-center text-xs text-slate-400">
-              No threads yet. Compose a prompt to start.
+            <div className="px-3 py-6 text-center text-xs text-slate-400">
+              No turns yet. Compose a prompt to fan-out.
             </div>
           ) : (
             threads.map((th) => {
@@ -75,12 +75,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => onSelectThread(th.id)}
                   className={`group flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-all ${
                     isActive
-                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30'
-                      : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'
+                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                      : 'text-slate-400 hover:bg-[#141822] hover:text-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-blue-400' : 'text-slate-400'}`} />
+                    <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
                     <span className="truncate">{th.title}</span>
                   </div>
                   <button
@@ -98,7 +98,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Provider Status Summary Bar */}
-      <div className="mt-auto border-t border-slate-800/80 pt-3">
+      <div className="mt-auto border-t border-white/[0.06] pt-3">
         <div className="flex items-center justify-between px-1 mb-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Server className="h-3 w-3 text-slate-400" />
@@ -106,7 +106,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </span>
           <button
             onClick={onOpenSettings}
-            className="text-[10px] text-blue-400 hover:text-blue-300 font-medium hover:underline"
+            className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold hover:underline"
           >
             Configure
           </button>
@@ -117,9 +117,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               key={p.id}
               onClick={onOpenSettings}
-              className="flex items-center justify-between rounded-lg bg-slate-900/60 hover:bg-slate-900 px-2 py-1 text-[11px] text-slate-300 cursor-pointer border border-slate-800/60 transition-colors"
+              className="flex items-center justify-between rounded-lg bg-[#13161f] hover:bg-[#191d29] px-2 py-1.5 text-[11px] text-slate-300 cursor-pointer border border-white/[0.06] transition-colors"
             >
-              <span className="truncate capitalize">{p.id}</span>
+              <span className="truncate capitalize font-mono text-[10px]">{p.id}</span>
               {p.isConnected ? (
                 <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
               ) : (

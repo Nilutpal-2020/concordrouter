@@ -19,16 +19,16 @@ interface SecurityViewProps {
 
 export const SecurityView: React.FC<SecurityViewProps> = ({ onOpenSettings }) => {
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
+    <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 bg-[#090b0e]">
       <div className="mx-auto max-w-5xl space-y-12">
         {/* Header Hero */}
         <div className="text-center space-y-3 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3.5 py-1 text-xs font-semibold text-amber-400 border border-amber-500/20">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#141822] px-3.5 py-1 text-xs font-mono text-amber-400 border border-amber-500/20">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Cryptographic Privacy & BYOA Architecture</span>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
-            Bring Your Own Account (BYOA)
+            Bring Your Own Account <span className="text-gradient-gold">(BYOA)</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
             ConcordRouter does not proxy, markup, or resell LLM API usage. You connect directly to providers using your official credentials.
@@ -37,7 +37,7 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ onOpenSettings }) =>
 
         {/* Security Principles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="glass-card rounded-2xl p-6 space-y-3 border border-white/[0.08]">
+          <div className="glass-card rounded-2xl p-6 space-y-3 bg-[#11141b] border border-white/[0.08]">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
               <Lock className="h-5 w-5" />
             </div>
@@ -47,69 +47,65 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ onOpenSettings }) =>
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-6 space-y-3 border border-white/[0.08]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+          <div className="glass-card rounded-2xl p-6 space-y-3 bg-[#11141b] border border-white/[0.08]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <Key className="h-5 w-5" />
             </div>
             <h3 className="text-sm font-bold text-white">Never Returned in Plaintext</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              After initial verification, the server only returns masked previews (e.g. <code className="text-indigo-300">sk-ant-...4x9f</code>) back to the browser.
+              After initial verification, the server only returns masked previews (e.g. <code className="text-amber-300">sk-ant-...4x9f</code>) back to the browser.
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-6 space-y-3 border border-white/[0.08]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+          <div className="glass-card rounded-2xl p-6 space-y-3 bg-[#11141b] border border-white/[0.08]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
               <Server className="h-5 w-5" />
             </div>
-            <h3 className="text-sm font-bold text-white">Zero Token Markups</h3>
+            <h3 className="text-sm font-bold text-white">Zero Telemetry & Direct Dispatch</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              You pay official provider rates directly to Anthropic, OpenAI, or Google. Or run completely free with local Ollama open-weights models.
+              Requests flow directly from your machine to official provider endpoints. No middleman cloud database retains your prompts or completions.
             </p>
           </div>
         </div>
 
-        {/* Comparison Table */}
-        <div className="glass-card rounded-2xl border border-white/[0.08] overflow-hidden">
-          <div className="p-6 border-b border-white/[0.08] bg-slate-950/60">
-            <h3 className="text-sm font-bold text-white">Comparison: ConcordRouter vs Typical Multi-Model Proxies</h3>
+        {/* Security Comparison Table */}
+        <div className="rounded-3xl bg-[#11141b]/90 border border-white/[0.08] p-6 lg:p-8 space-y-6">
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-white">Privacy Comparison</h3>
+            <p className="text-xs sm:text-sm text-slate-400">
+              How ConcordRouter BYOA compares to commercial cloud AI wrappers and proxy services.
+            </p>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-white/[0.08] bg-slate-950/40 text-slate-400 font-mono">
-                  <th className="p-4">Feature / Metric</th>
-                  <th className="p-4 text-indigo-300">ConcordRouter (BYOA)</th>
-                  <th className="p-4 text-slate-400">Traditional AI Proxies</th>
+            <table className="w-full text-left text-xs text-slate-300">
+              <thead className="border-b border-white/[0.08] text-[11px] uppercase tracking-wider text-slate-400 font-mono">
+                <tr>
+                  <th className="pb-3 font-semibold">Security Vector</th>
+                  <th className="pb-3 font-semibold text-amber-400">ConcordRouter (BYOA)</th>
+                  <th className="pb-3 font-semibold text-slate-400">Commercial Cloud AI Proxy</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/[0.06] text-slate-300">
+              <tbody className="divide-y divide-white/[0.06] font-mono text-[12px]">
                 <tr>
-                  <td className="p-4 font-semibold">Token Markups</td>
-                  <td className="p-4 text-emerald-400 font-semibold flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> 0% (Direct provider pricing)
-                  </td>
-                  <td className="p-4 text-slate-400">10% - 30% added margin</td>
+                  <td className="py-3 text-white font-sans font-medium">Key Storage</td>
+                  <td className="py-3 text-emerald-400 font-bold">Local AES-256-GCM encrypted database</td>
+                  <td className="py-3 text-red-400">Stored on remote third-party servers</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold">Rate Limit Bottlenecks</td>
-                  <td className="p-4 text-emerald-400 font-semibold flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> Your own tier & quota limits
-                  </td>
-                  <td className="p-4 text-slate-400">Shared pool bottlenecks</td>
+                  <td className="py-3 text-white font-sans font-medium">Prompt Retention</td>
+                  <td className="py-3 text-emerald-400 font-bold">Zero remote logging (Local SQLite only)</td>
+                  <td className="py-3 text-amber-400">Often logged for analytics/training</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold">Local Offline Models</td>
-                  <td className="p-4 text-emerald-400 font-semibold flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> Native Ollama (`localhost:11434`)
-                  </td>
-                  <td className="p-4 text-slate-500">Not supported</td>
+                  <td className="py-3 text-white font-sans font-medium">Token Pricing Markup</td>
+                  <td className="py-3 text-emerald-400 font-bold">0% (Direct provider invoice)</td>
+                  <td className="py-3 text-red-400">10% – 50% price markup added</td>
                 </tr>
                 <tr>
-                  <td className="p-4 font-semibold">Prose Diffing & Alignment</td>
-                  <td className="p-4 text-emerald-400 font-semibold flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4" /> Needleman-Wunsch sequence alignment
-                  </td>
-                  <td className="p-4 text-slate-500">Side-by-side text only</td>
+                  <td className="py-3 text-white font-sans font-medium">Local Model Support</td>
+                  <td className="py-3 text-emerald-400 font-bold">Native Ollama localhost integration</td>
+                  <td className="py-3 text-red-400">Cloud models only</td>
                 </tr>
               </tbody>
             </table>
@@ -117,13 +113,17 @@ export const SecurityView: React.FC<SecurityViewProps> = ({ onOpenSettings }) =>
         </div>
 
         {/* CTA */}
-        <div className="text-center pt-2">
+        <div className="rounded-3xl bg-[#11141b]/90 border border-white/[0.08] p-8 text-center space-y-4">
+          <h3 className="text-xl font-bold text-white">Manage your provider credentials</h3>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+            Add or update your Anthropic, OpenAI, Google Gemini, Ollama, and OpenRouter keys securely in the Key Vault.
+          </p>
           <button
             onClick={onOpenSettings}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-500 hover:to-indigo-500 px-6 py-3 text-xs font-bold text-white shadow-xl shadow-amber-500/20 transition-all hover:scale-105"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-5 py-2.5 text-xs font-bold text-black shadow-md shadow-amber-500/20 transition-all active:scale-[0.98]"
           >
-            <span>Open Key Vault & Settings</span>
-            <ArrowRight className="h-4 w-4" />
+            <Key className="h-4 w-4" />
+            <span>Open Key Vault</span>
           </button>
         </div>
       </div>

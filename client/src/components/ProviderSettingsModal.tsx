@@ -3,13 +3,23 @@
 import React, { useState } from 'react';
 import { ProviderStatus } from '@/lib/types';
 import { saveProviderKey, deleteProviderKey } from '@/lib/api';
-import { X, Key, ShieldCheck, Server, AlertCircle, CheckCircle2, Loader2, Trash2 } from 'lucide-react';
+import {
+  Key,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  X,
+  Loader2,
+  Trash2,
+  ExternalLink,
+  Lock,
+} from 'lucide-react';
 
 interface ProviderSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   providers: ProviderStatus[];
-  onRefreshProviders: () => Promise<void>;
+  onRefreshProviders: () => void;
 }
 
 export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
@@ -27,60 +37,62 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  const currentProvider = providers.find((p) => p.id === activeTab) || providers[0];
+  const currentProvider = providers.find((p) => p.id === activeTab);
 
   const handleSave = async () => {
+    if (!currentProvider) return;
     setIsLoading(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     try {
-      await saveProviderKey(activeTab, apiKey, customUrl);
-      setSuccessMsg(`Successfully validated and connected ${currentProvider?.name}!`);
+      await saveProviderKey(currentProvider.id, apiKey, customUrl || '');
+      setSuccessMsg(`Successfully connected and validated ${currentProvider.name}!`);
       setApiKey('');
-      await onRefreshProviders();
+      onRefreshProviders();
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Validation failed');
+      setErrorMsg(err?.message || 'Failed to authenticate provider key. Please verify credentials.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleDisconnect = async () => {
+    if (!currentProvider) return;
     setIsLoading(true);
     setErrorMsg(null);
-    setSuccessMsg(null);
-
     try {
-      await deleteProviderKey(activeTab);
-      setSuccessMsg(`Disconnected ${currentProvider?.name}.`);
-      setApiKey('');
-      setCustomUrl('');
-      await onRefreshProviders();
+      await deleteProviderKey(currentProvider.id);
+      setSuccessMsg(`Disconnected ${currentProvider.name}.`);
+      onRefreshProviders();
+      setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to disconnect');
+      setErrorMsg(err?.message || 'Failed to disconnect provider');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="flex flex-col w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+      <div className="flex w-full max-w-2xl flex-col rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800/80 px-6 py-4 bg-slate-950/60">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#0e1117]">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Key className="h-4 w-4" />
+              <Lock className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">BYOA Provider Credentials</h2>
-              <p className="text-xs text-slate-400">Your keys are encrypted at rest with AES-256-GCM. We never mark up or route usage through platform keys.</p>
+              <h2 className="text-sm font-bold text-white">BYOA Key Vault</h2>
+              <p className="text-xs text-slate-400">
+                Credentials are encrypted at rest with local AES-256-GCM
+              </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -89,7 +101,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
         {/* Content Body */}
         <div className="flex flex-col sm:flex-row min-h-[380px]">
           {/* Provider Tabs Sidebar */}
-          <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-slate-800 bg-slate-950/30 p-2 space-y-1">
+          <div className="w-full sm:w-48 border-b sm:border-b-0 sm:border-r border-white/[0.06] bg-[#0c0f15] p-2 space-y-1">
             {providers.map((p) => {
               const isSelected = p.id === activeTab;
               return (
@@ -104,8 +116,8 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                   }}
                   className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-medium transition-all ${
                     isSelected
-                      ? 'bg-blue-600/15 text-blue-400 border border-blue-500/30 font-semibold'
-                      : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
+                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold'
+                      : 'text-slate-400 hover:bg-[#151922] hover:text-slate-200'
                   }`}
                 >
                   <span className="capitalize">{p.id}</span>
@@ -124,10 +136,10 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-base font-semibold text-white">{currentProvider?.name}</h3>
+                  <h3 className="text-base font-bold text-white">{currentProvider?.name}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-slate-400">Auth Mode:</span>
-                    <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 uppercase">
+                    <span className="rounded bg-black/40 px-1.5 py-0.5 text-[10px] font-mono text-slate-300 uppercase border border-white/[0.06]">
                       {currentProvider?.authMode}
                     </span>
                     {currentProvider?.isConnected && (
@@ -150,16 +162,16 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
               </div>
 
               {currentProvider?.keyPreview && (
-                <div className="mb-4 rounded-xl bg-slate-950/60 border border-slate-800 p-3 text-xs text-slate-400">
-                  <span className="text-slate-500">Active Key:</span> <code className="text-blue-400 font-mono">{currentProvider.keyPreview}</code>
+                <div className="mb-4 rounded-xl bg-[#141822] border border-white/[0.06] p-3 text-xs text-slate-400">
+                  <span className="text-slate-500">Active Key:</span> <code className="text-amber-400 font-mono">{currentProvider.keyPreview}</code>
                 </div>
               )}
 
               {/* Input Forms */}
               {currentProvider?.id === 'mock' ? (
-                <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-xs text-blue-300 space-y-2">
-                  <p className="font-semibold text-blue-200">Simulated Testing Provider Active</p>
-                  <p>
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4 text-xs text-amber-300 space-y-2">
+                  <p className="font-bold text-amber-200">Simulated Testing Provider Active</p>
+                  <p className="text-slate-300 leading-relaxed">
                     The Mock provider generates deterministic response fixtures for fast benchmarking, multi-pane streaming, and cherry-pick testing with zero cost or configuration required.
                   </p>
                 </div>
@@ -174,7 +186,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                       placeholder="http://localhost:11434"
                       value={customUrl}
                       onChange={(e) => setCustomUrl(e.target.value)}
-                      className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      className="w-full rounded-xl bg-[#0c0f15] border border-white/[0.08] px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-amber-500 focus:outline-none font-mono"
                     />
                     <p className="mt-1 text-[11px] text-slate-500">Make sure `ollama serve` is running on your machine.</p>
                   </div>
@@ -190,7 +202,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                       placeholder={currentProvider?.keyPreview ? 'Paste new key to rotate...' : 'sk-...'}
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
-                      className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      className="w-full rounded-xl bg-[#0c0f15] border border-white/[0.08] px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-amber-500 focus:outline-none font-mono"
                     />
                   </div>
 
@@ -203,7 +215,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                       placeholder="https://..."
                       value={customUrl}
                       onChange={(e) => setCustomUrl(e.target.value)}
-                      className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                      className="w-full rounded-xl bg-[#0c0f15] border border-white/[0.08] px-3.5 py-2.5 text-xs text-white placeholder-slate-600 focus:border-amber-500 focus:outline-none font-mono"
                     />
                   </div>
                 </div>
@@ -225,10 +237,10 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
             </div>
 
             {/* Footer Buttons */}
-            <div className="mt-6 flex justify-end gap-2 border-t border-slate-800/80 pt-4">
+            <div className="mt-6 flex justify-end gap-2 border-t border-white/[0.06] pt-4">
               <button
                 onClick={onClose}
-                className="rounded-xl px-4 py-2 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="rounded-xl px-4 py-2 text-xs font-medium text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
               >
                 Close
               </button>
@@ -236,7 +248,7 @@ export const ProviderSettingsModal: React.FC<ProviderSettingsModalProps> = ({
                 <button
                   onClick={handleSave}
                   disabled={isLoading || (currentProvider?.id !== 'ollama' && !apiKey && !currentProvider?.isConnected)}
-                  className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-600/30 transition-all active:scale-[0.98]"
+                  className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 text-xs font-bold text-black shadow-md shadow-amber-500/20 transition-all active:scale-[0.98]"
                 >
                   {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                   <span>Test & Save Key</span>

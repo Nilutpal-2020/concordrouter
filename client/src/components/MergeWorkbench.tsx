@@ -192,36 +192,36 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="flex flex-col w-full max-w-[1400px] h-[94vh] rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+      <div className="flex flex-col w-full max-w-[1400px] h-[94vh] rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden">
         {/* Top Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-6 py-3.5 bg-slate-950/90">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-3.5 bg-[#0e1117]">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-md shadow-blue-500/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-black font-bold shadow-md shadow-amber-500/20">
               <GitMerge className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 Response Reconciliation Workbench
                 {alignmentResult && (
-                  <span className="text-[11px] bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full px-2 py-0.2 font-mono">
+                  <span className="text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full px-2 py-0.2 font-mono">
                     {Math.round(alignmentResult.overallAgreement * 100)}% Consensus
                   </span>
                 )}
               </h2>
               <p className="text-xs text-slate-400">
-                Comparing <span className="text-cyan-400 font-semibold">{modelAKey}</span> vs{' '}
-                <span className="text-purple-400 font-semibold">{modelBKey}</span>
+                Comparing <span className="text-amber-400 font-semibold">{modelAKey}</span> vs{' '}
+                <span className="text-emerald-400 font-semibold">{modelBKey}</span>
               </p>
             </div>
           </div>
 
           {/* Mode Selector Tabs */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-900 p-1 border border-slate-800 text-xs">
+          <div className="flex items-center gap-1.5 rounded-xl bg-black/40 p-1 border border-white/[0.06] text-xs">
             <button
               onClick={() => setActiveTab('semantic')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 activeTab === 'semantic'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-amber-500 text-black font-bold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -233,7 +233,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
               onClick={() => setActiveTab('cherrypick')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 activeTab === 'cherrypick'
-                  ? 'bg-blue-600 text-white shadow-sm'
+                  ? 'bg-amber-500 text-black font-bold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -245,30 +245,30 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
               onClick={() => setActiveTab('synthesis')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
                 activeTab === 'synthesis'
-                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <Sparkles className="h-3.5 w-3.5" />
               <span>AI Synthesis</span>
             </button>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Main 2-Pane Workspace Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-slate-800">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06]">
           {/* Left / Center Area: Comparison Mode Content */}
-          <div className="lg:col-span-7 flex flex-col h-full bg-slate-950/40 overflow-hidden">
+          <div className="lg:col-span-7 flex flex-col h-full bg-black/20 overflow-hidden">
             {isLoading ? (
               <div className="flex flex-1 items-center justify-center text-slate-500 gap-2 text-xs">
-                <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+                <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
                 <span>Computing sequence alignment & similarity matrix...</span>
               </div>
             ) : activeTab === 'semantic' ? (

@@ -79,22 +79,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="flex flex-col w-full max-w-xl rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
+      <div className="flex flex-col w-full max-w-xl rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4 bg-slate-950/80">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#0e1117]">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Download className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Export Arena Session</h2>
+              <h2 className="text-sm font-bold text-white">Export Arena Session</h2>
               <p className="text-xs text-slate-400">{thread.title}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -109,37 +109,33 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <button
               onClick={handleDownloadMarkdown}
-              className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-4 text-xs font-semibold text-white transition-all group"
+              className="flex items-center justify-center gap-2.5 rounded-2xl bg-[#141822] hover:bg-[#1a202c] border border-white/[0.08] hover:border-amber-500/30 p-4 text-xs font-bold text-white transition-all group"
             >
-              <FileText className="h-5 w-5 text-blue-400 group-hover:scale-110 transition-transform" />
+              <FileText className="h-5 w-5 text-amber-400 group-hover:scale-110 transition-transform" />
               <span>Download Markdown (.md)</span>
             </button>
 
             <button
               onClick={handleDownloadJSON}
-              className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 hover:bg-slate-800/80 border border-slate-800 p-4 text-xs font-semibold text-white transition-all group"
+              className="flex items-center justify-center gap-2.5 rounded-2xl bg-[#141822] hover:bg-[#1a202c] border border-white/[0.08] hover:border-amber-500/30 p-4 text-xs font-bold text-white transition-all group"
             >
-              <Code2 className="h-5 w-5 text-purple-400 group-hover:scale-110 transition-transform" />
-              <span>Download Raw JSON</span>
+              <Code2 className="h-5 w-5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span>Download JSON (.json)</span>
             </button>
+          </div>
+
+          <div className="pt-2 text-[11px] text-slate-500 font-mono text-center">
+            {turns.length} Turn(s) • {merges.length} Saved Merge(s) • {thread.id}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-slate-800 px-6 py-3.5 bg-slate-950/80">
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs text-slate-300 hover:text-white font-medium transition-colors"
-          >
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-            <span>{copied ? 'Copied Markdown!' : 'Copy to Clipboard'}</span>
-          </button>
-
+        <div className="flex justify-end border-t border-white/[0.06] px-6 py-3.5 bg-[#0e1117]">
           <button
             onClick={onClose}
-            className="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-1.5 text-xs font-medium text-white transition-colors"
+            className="rounded-xl px-4 py-2 text-xs font-medium text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
           >
-            Done
+            Close
           </button>
         </div>
       </div>

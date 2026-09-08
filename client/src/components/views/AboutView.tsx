@@ -5,11 +5,11 @@ import { BookOpen, GitBranch, Shield, Zap, Sparkles, Heart, Terminal, Code } fro
 
 export const AboutView: React.FC = () => {
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
+    <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 bg-[#090b0e]">
       <div className="mx-auto max-w-4xl space-y-12">
         {/* Header Hero */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-indigo-500/10 px-3.5 py-1 text-xs font-semibold text-indigo-400 border border-indigo-500/20">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#141822] px-3.5 py-1 text-xs font-mono text-amber-400 border border-amber-500/20">
             <BookOpen className="h-3.5 w-3.5" />
             <span>Mission & Philosophy</span>
           </div>
@@ -22,9 +22,9 @@ export const AboutView: React.FC = () => {
         </div>
 
         {/* Core Thesis Card */}
-        <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/[0.08] space-y-4">
+        <div className="glass-card rounded-3xl p-6 sm:p-8 bg-[#11141b] border border-white/[0.08] space-y-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-indigo-400" />
+            <Sparkles className="h-5 w-5 text-amber-400" />
             <span>The Multi-Model Thesis</span>
           </h2>
           <p className="text-xs sm:text-sm leading-relaxed text-slate-300">
@@ -37,8 +37,8 @@ export const AboutView: React.FC = () => {
 
         {/* Principles Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="glass-card rounded-2xl p-6 space-y-3 border border-white/[0.08]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+          <div className="glass-card rounded-2xl p-6 space-y-3 bg-[#11141b] border border-white/[0.08]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
               <Terminal className="h-5 w-5" />
             </div>
             <h3 className="text-sm font-bold text-white">Zero-Friction Local Execution</h3>
@@ -47,8 +47,8 @@ export const AboutView: React.FC = () => {
             </p>
           </div>
 
-          <div className="glass-card rounded-2xl p-6 space-y-3 border border-white/[0.08]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <div className="glass-card rounded-2xl p-6 space-y-3 bg-[#11141b] border border-white/[0.08]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <Shield className="h-5 w-5" />
             </div>
             <h3 className="text-sm font-bold text-white">Trust & Credential Integrity</h3>
@@ -58,13 +58,13 @@ export const AboutView: React.FC = () => {
           </div>
         </div>
 
-        {/* Open Source / Credits Footer */}
-        <div className="text-center pt-6 border-t border-white/[0.06] text-xs text-slate-500 space-y-2">
-          <p>ConcordRouter is open source under the MIT License.</p>
-          <p className="flex items-center justify-center gap-1">
-            <span>Built with Go, Next.js, and</span>
-            <Heart className="h-3.5 w-3.5 text-red-500 fill-red-500 inline" />
-            <span>for the developer community.</span>
+        {/* Open Source Footer */}
+        <div className="rounded-3xl bg-[#11141b]/90 border border-white/[0.08] p-6 text-center space-y-2">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-slate-400">
+            <span>Built with local Go runtime, Next.js App Router, and pure SQLite.</span>
+          </div>
+          <p className="text-[11px] text-slate-400 font-mono">
+            ConcordRouter • Open-source Multi-Model Consensus Architecture
           </p>
         </div>
       </div>

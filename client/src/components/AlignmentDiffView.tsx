@@ -74,7 +74,7 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
                 {pair.leftChunk && (
                   <button
                     onClick={() => onAcceptLeft(pair.leftChunk!.content)}
-                    className="flex items-center gap-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 border border-cyan-500/30 text-cyan-300 px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    className="flex items-center gap-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 px-2.5 py-1 text-[11px] font-semibold transition-colors"
                     title="Accept A"
                   >
                     <Plus className="h-3 w-3" /> Accept A
@@ -84,7 +84,7 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
                 {pair.rightChunk && (
                   <button
                     onClick={() => onAcceptRight(pair.rightChunk!.content)}
-                    className="flex items-center gap-1 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    className="flex items-center gap-1 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 text-[11px] font-semibold transition-colors"
                     title="Accept B"
                   >
                     <Plus className="h-3 w-3" /> Accept B
@@ -94,10 +94,10 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
                 {pair.leftChunk && pair.rightChunk && (
                   <button
                     onClick={() => onAcceptBoth(pair.leftChunk!.content, pair.rightChunk!.content)}
-                    className="flex items-center gap-1 rounded-lg bg-blue-950/40 hover:bg-blue-900/60 border border-blue-500/30 text-blue-300 px-2.5 py-1 text-[11px] font-medium transition-colors"
+                    className="flex items-center gap-1 rounded-lg bg-[#181d28] hover:bg-[#202736] border border-white/[0.1] text-slate-200 px-2.5 py-1 text-[11px] font-semibold transition-colors"
                     title="Accept Both (A + B)"
                   >
-                    <Split className="h-3 w-3" /> Accept Both
+                    <Split className="h-3 w-3 text-amber-400" /> Accept Both
                   </button>
                 )}
               </div>
@@ -109,8 +109,8 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
               <div
                 className={`rounded-xl p-3 border ${
                   pair.leftChunk
-                    ? 'bg-slate-950/60 border-slate-800 text-slate-200'
-                    : 'bg-slate-950/20 border-dashed border-slate-800/60 text-slate-600 italic flex items-center justify-center'
+                    ? 'bg-[#0c0f15] border-white/[0.08] text-slate-200'
+                    : 'bg-[#090b0e] border-dashed border-white/[0.06] text-slate-600 italic flex items-center justify-center'
                 }`}
               >
                 {pair.leftChunk ? (
@@ -124,8 +124,8 @@ export const AlignmentDiffView: React.FC<AlignmentDiffViewProps> = ({
               <div
                 className={`rounded-xl p-3 border ${
                   pair.rightChunk
-                    ? 'bg-slate-950/60 border-slate-800 text-slate-200'
-                    : 'bg-slate-950/20 border-dashed border-slate-800/60 text-slate-600 italic flex items-center justify-center'
+                    ? 'bg-[#0c0f15] border-white/[0.08] text-slate-200'
+                    : 'bg-[#090b0e] border-dashed border-white/[0.06] text-slate-600 italic flex items-center justify-center'
                 }`}
               >
                 {pair.rightChunk ? (
