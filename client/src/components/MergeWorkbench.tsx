@@ -5,6 +5,7 @@ import { ModelResponse, ChunkSegment, AlignmentResult, TargetModel, StreamChunk 
 import { segmentResponseText, saveMergeRecord, fetchSemanticAlignment, streamSynthesis } from '@/lib/api';
 import { AlignmentDiffView } from './AlignmentDiffView';
 import { SimilarityHeatmap } from './SimilarityHeatmap';
+import { MarkdownRenderer } from './MarkdownRenderer';
 import {
   GitMerge,
   X,
@@ -109,6 +110,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
+  const [draftViewMode, setDraftViewMode] = useState<'edit' | 'preview'>('edit');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -522,7 +524,29 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border mr-1">
+                  <button
+                    onClick={() => setDraftViewMode('edit')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                      draftViewMode === 'edit'
+                        ? 'bg-surface text-foreground font-semibold shadow-sm'
+                        : 'text-text-muted hover:text-foreground'
+                    }`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDraftViewMode('preview')}
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${
+                      draftViewMode === 'preview'
+                        ? 'bg-surface text-foreground font-semibold shadow-sm'
+                        : 'text-text-muted hover:text-foreground'
+                    }`}
+                  >
+                    Preview
+                  </button>
+                </div>
                 <button
                   onClick={handleCopyDraft}
                   disabled={!draftText}
@@ -548,15 +572,23 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
             </div>
 
             <div className="flex-1 flex flex-col p-4 space-y-2 overflow-hidden bg-background">
-              <textarea
-                value={draftText}
-                onChange={(e) => {
-                  setDraftText(e.target.value);
-                  setIsAISynthesized(false);
-                }}
-                placeholder="Accepted chunks and synthesis drafts appear here for live editing..."
-                className="flex-1 w-full rounded-xl bg-surface border border-border p-4 text-xs sm:text-sm leading-relaxed text-foreground placeholder-text-muted focus:border-border-strong focus:outline-none resize-none font-sans"
-              />
+              {draftViewMode === 'edit' ? (
+                <textarea
+                  value={draftText}
+                  onChange={(e) => {
+                    setDraftText(e.target.value);
+                    setIsAISynthesized(false);
+                  }}
+                  placeholder="Accepted chunks and synthesis drafts appear here for live editing..."
+                  className="flex-1 w-full rounded-xl bg-surface border border-border p-4 text-xs sm:text-sm leading-relaxed text-foreground placeholder-text-muted focus:border-border-strong focus:outline-none resize-none font-sans"
+                />
+              ) : (
+                <div className="flex-1 w-full rounded-xl bg-surface border border-border p-4 overflow-y-auto">
+                  <MarkdownRenderer
+                    content={draftText || '*Accepted chunks and synthesis drafts will render formatted markdown here.*'}
+                  />
+                </div>
+              )}
 
               <div className="flex items-center justify-between text-[11px] text-text-muted font-mono px-1">
                 <span>{draftText ? draftText.split(/\s+/).filter(Boolean).length : 0} words</span>

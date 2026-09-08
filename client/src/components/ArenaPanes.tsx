@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { TargetModel, ModelResponse, GatingDecision } from '@/lib/types';
 import { evaluateMergeGating } from '@/lib/api';
+import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import {
   Cpu,
   RefreshCw,
@@ -547,10 +548,10 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                     )}
 
                     {resp?.content && (
-                      <div className="arena-prose whitespace-pre-wrap">
-                        {resp.content}
-                        {isCurrentStreaming && <span className="streaming-cursor" />}
-                      </div>
+                      <MarkdownRenderer
+                        content={resp.content}
+                        isStreaming={isCurrentStreaming}
+                      />
                     )}
                   </div>
 
