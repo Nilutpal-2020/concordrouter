@@ -181,40 +181,74 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
   ];
 
   return (
-    <div className="flex flex-col h-full space-y-3">
-      {/* Top Arena Control & Mode Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-surface border border-border px-4 py-2 transition-colors">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
-            <span className="font-semibold">Arena</span>
-            <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.5 text-[10px] font-mono">
-              {selectedModels.length} {selectedModels.length === 1 ? 'Model' : 'Models'}
+    <div className="flex flex-col h-full space-y-2.5">
+      {/* Sleek Ergonomic Control Bar: Layout, Models, and Reconcile Action */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-surface border border-border px-3 py-1.5 text-xs transition-colors shadow-sm">
+        {/* Left: Models info & Reconcile Gating Action */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 font-medium text-foreground">
+            <span className="font-semibold text-xs">Arena</span>
+            <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-1.5 py-0.2 text-[10px] font-mono">
+              {selectedModels.length} {selectedModels.length === 1 ? 'model' : 'models'}
             </span>
           </div>
 
           {isStreaming && (
-            <span className="flex items-center gap-1.5 text-[11px] font-mono text-foreground animate-pulse bg-surface-secondary border border-border px-2.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[11px] font-mono text-foreground animate-pulse bg-surface-secondary border border-border px-2 py-0.5 rounded-full">
               <span className="h-1.5 w-1.5 rounded-full bg-[#10a37f] animate-ping" />
-              Streaming answers...
+              Streaming...
             </span>
+          )}
+
+          {/* Compact Inline Gating / Reconcile Pill */}
+          {completedKeys.length >= 2 && !isStreaming && gatingDecision && (
+            <div className="flex items-center gap-2 border-l border-border pl-2.5">
+              <span
+                className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                  gatingDecision.isConsensus
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                }`}
+                title={gatingDecision.reason}
+              >
+                {gatingDecision.isConsensus ? (
+                  <CheckCircle2 className="h-3 w-3" />
+                ) : (
+                  <GitMerge className="h-3 w-3" />
+                )}
+                <span>
+                  {gatingDecision.similarityScore !== undefined
+                    ? `${(gatingDecision.similarityScore * 100).toFixed(0)}% Match · ${gatingDecision.isConsensus ? 'Consensus' : 'Divergent'}`
+                    : gatingDecision.badgeText}
+                </span>
+              </span>
+
+              <button
+                onClick={() => onOpenMerge(completedKeys[0], completedKeys[1])}
+                className="flex items-center gap-1 rounded-lg bg-foreground text-background px-2.5 py-1 text-[11px] font-medium hover:opacity-90 transition-all active:scale-[0.98] shadow-sm"
+              >
+                <GitMerge className="h-3 w-3" />
+                <span>{gatingDecision.isConsensus ? 'Inspect Diff' : 'Launch Workbench'}</span>
+              </button>
+            </div>
           )}
         </div>
 
-        {/* View Controls: Layout Switcher & Text Size */}
-        <div className="flex items-center gap-2">
+        {/* Right: View Ergonomics (Layout Mode & Text Size) */}
+        <div className="flex items-center gap-2 shrink-0">
           {/* Layout Selector */}
           <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border">
             <button
               onClick={() => setLayoutMode('grid')}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] transition-all ${
                 layoutMode === 'grid'
-                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  ? 'bg-surface text-foreground font-semibold shadow-sm'
                   : 'text-text-muted hover:text-foreground'
               }`}
-              title="Side-by-Side Grid Layout"
+              title="Side-by-Side Comparison"
             >
-              <Columns className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Grid</span>
+              <Columns className="h-3 w-3" />
+              <span>Grid</span>
             </button>
 
             <button
@@ -224,28 +258,28 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                   setFocusedModelKey(`${selectedModels[0].providerId}:${selectedModels[0].model}`);
                 }
               }}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] transition-all ${
                 layoutMode === 'focus'
-                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  ? 'bg-surface text-foreground font-semibold shadow-sm'
                   : 'text-text-muted hover:text-foreground'
               }`}
-              title="Focus Single Model Layout"
+              title="Full Width Tabs View (Best for Reading)"
             >
-              <Eye className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Focus</span>
+              <Eye className="h-3 w-3" />
+              <span>Tabs</span>
             </button>
 
             <button
               onClick={() => setLayoutMode('stacked')}
-              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] transition-all ${
                 layoutMode === 'stacked'
-                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  ? 'bg-surface text-foreground font-semibold shadow-sm'
                   : 'text-text-muted hover:text-foreground'
               }`}
-              title="Stacked Comparison Layout"
+              title="Stacked Flow"
             >
-              <LayoutList className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Stacked</span>
+              <LayoutList className="h-3 w-3" />
+              <span>Stacked</span>
             </button>
           </div>
 
@@ -253,28 +287,28 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
           <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border">
             <button
               onClick={() => setTextSize('compact')}
-              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono transition-all ${
                 textSize === 'compact' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
-              title="Compact Font Size (12px)"
+              title="Compact font (12px)"
             >
               S
             </button>
             <button
               onClick={() => setTextSize('comfortable')}
-              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono transition-all ${
                 textSize === 'comfortable' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
-              title="Comfortable Font Size (14px)"
+              title="Comfortable font (14px)"
             >
               M
             </button>
             <button
               onClick={() => setTextSize('spacious')}
-              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+              className={`rounded-md px-1.5 py-0.5 text-[10px] font-mono transition-all ${
                 textSize === 'spacious' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
-              title="Spacious Font Size (16px)"
+              title="Spacious font (16px)"
             >
               L
             </button>
@@ -282,46 +316,9 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
         </div>
       </div>
 
-      {/* Consensus / Gating Decision Banner */}
-      {completedKeys.length >= 2 && !isStreaming && gatingDecision && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface border border-border p-3.5 shadow-sm transition-all">
-          <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-secondary border border-border shrink-0">
-              {gatingDecision.isConsensus ? (
-                <CheckCircle2 className="h-4 w-4 text-[#10a37f]" />
-              ) : (
-                <GitMerge className="h-4 w-4 text-[#cc785c]" />
-              )}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-xs font-semibold text-foreground">
-                  {gatingDecision.badgeText || 'Multi-Model Analysis Complete'}
-                </h4>
-                {gatingDecision.similarityScore !== undefined && (
-                  <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-mono text-text-secondary border border-border">
-                    {(gatingDecision.similarityScore * 100).toFixed(0)}% Match
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-text-secondary mt-0.5">{gatingDecision.reason}</p>
-            </div>
-          </div>
-
-          {/* Launch Workbench Button */}
-          <button
-            onClick={() => onOpenMerge(completedKeys[0], completedKeys[1])}
-            className="flex items-center gap-2 rounded-full bg-foreground text-background px-4 py-2 text-xs font-medium hover:opacity-90 transition-all active:scale-[0.98] shadow-sm"
-          >
-            <GitMerge className="h-3.5 w-3.5" />
-            <span>{gatingDecision.isConsensus ? 'Inspect Diff' : 'Launch Merge Workbench'}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Focus Mode Tab Bar */}
+      {/* Focus / Tabs Mode Tab Bar */}
       {layoutMode === 'focus' && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           {selectedModels.map((target) => {
             const modelKey = `${target.providerId}:${target.model}`;
             const isSelected = focusedModelKey === modelKey;
@@ -340,7 +337,7 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
               >
                 <span className={`h-2 w-2 rounded-full ${theme.dotBg}`} />
                 <span>{target.model}</span>
-                <span className="text-[10px] text-text-muted">({target.providerId})</span>
+                <span className="text-[10px] text-text-muted font-mono">({target.providerId})</span>
                 {resp?.tokens ? (
                   <span className="rounded bg-surface-secondary px-1 py-0.2 text-[9px] font-mono text-text-secondary">
                     {resp.tokens}t
@@ -440,8 +437,8 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                   key={modelKey}
                   className={`flex flex-col rounded-2xl bg-surface border border-border shadow-card overflow-hidden transition-all ${theme.borderAccent}`}
                 >
-                  {/* Pane Header */}
-                  <div className="flex items-center justify-between border-b border-border px-3.5 py-2 bg-surface-secondary/40">
+                  {/* Sticky Pane Header */}
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border px-3.5 py-2 bg-surface/95 backdrop-blur-sm">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className={`h-2.5 w-2.5 rounded-full ${theme.dotBg} shrink-0`} />
                       <div className="min-w-0">
@@ -497,7 +494,7 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                           }
                         }}
                         className="rounded-lg p-1 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
-                        title={layoutMode === 'focus' ? 'Back to Grid view' : 'Focus this pane'}
+                        title={layoutMode === 'focus' ? 'Back to Grid view' : 'Focus this pane full-width'}
                       >
                         {layoutMode === 'focus' ? (
                           <Minimize2 className="h-3.5 w-3.5" />
@@ -518,7 +515,7 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                   </div>
 
                   {/* Pane Content Body */}
-                  <div className={`flex-1 overflow-y-auto p-4 sm:p-5 ${getTextSizeClass()} text-foreground`}>
+                  <div className={`flex-1 overflow-y-auto p-4 sm:p-5 ${getTextSizeClass()} text-foreground min-h-[380px] max-h-[calc(100vh-270px)] scrollbar-thin`}>
                     {!resp && !isStreaming && (
                       <div className="flex h-full min-h-[140px] flex-col items-center justify-center text-center p-4 text-text-muted">
                         <Sparkles className="h-5 w-5 mb-1.5 opacity-50" />

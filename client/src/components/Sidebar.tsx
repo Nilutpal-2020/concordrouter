@@ -83,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className="flex h-full w-64 lg:w-72 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
+    <aside className="flex h-full w-60 lg:w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
       {/* Top Action Bar: New Arena & Collapse */}
       <div className="flex items-center gap-2 mb-2">
         <button
@@ -127,7 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Threads Section */}
       <div className="flex-1 overflow-y-auto pr-1">
         <div className="px-2 py-1 text-[11px] font-medium text-text-muted">
-          {searchQuery ? 'Search Results' : 'Recent Turns'}
+          {searchQuery ? 'Search Results' : 'History'}
         </div>
         <div className="mt-1 space-y-1">
           {threads.length === 0 ? (
