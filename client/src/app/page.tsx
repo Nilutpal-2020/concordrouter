@@ -222,6 +222,21 @@ export default function ArenaPage() {
       setThreads((prev) => [newTh, ...prev]);
     }
 
+    // Optimistically update thread title and firstPrompt on first turn
+    const isFirstTurn = turns.length === 0;
+    if (isFirstTurn) {
+      const autoTitle = currentPrompt.length > 36 ? currentPrompt.slice(0, 36) + '...' : currentPrompt;
+      setActiveThreadTitle(autoTitle);
+      setActiveThread((prev) => (prev ? { ...prev, title: autoTitle, firstPrompt: currentPrompt, turnCount: 1 } : null));
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === currentThreadId
+            ? { ...t, title: autoTitle, firstPrompt: currentPrompt, turnCount: 1 }
+            : t
+        )
+      );
+    }
+
     // Initialize blank responses for each target model
     const initialResponses: Record<string, ModelResponse> = {};
     selectedModels.forEach((target) => {
@@ -291,6 +306,7 @@ export default function ArenaPage() {
         if (currentThreadId) {
           handleSelectThread(currentThreadId);
         }
+        fetchThreads().then((thList) => setThreads(thList)).catch(console.error);
       }
     );
 
@@ -436,15 +452,23 @@ export default function ArenaPage() {
             <main className="flex flex-1 flex-col overflow-hidden bg-background">
               {/* Secondary Sub-Header */}
               <div className="flex items-center justify-between px-6 py-2 border-b border-border bg-surface text-xs text-text-secondary">
-                <div className="flex items-center gap-2.5 truncate">
+                <div className="flex items-center gap-2.5 truncate min-w-0">
                   <span className="font-semibold text-foreground truncate">{activeThreadTitle}</span>
+                  {(activeThread?.firstPrompt || (turns.length > 0 ? turns[0]?.userPrompt : '')) && (
+                    <span
+                      className="hidden md:inline-flex items-center gap-1 text-[11px] text-text-muted italic truncate max-w-xs lg:max-w-sm border-l border-border pl-2.5"
+                      title={activeThread?.firstPrompt || turns[0]?.userPrompt}
+                    >
+                      “{activeThread?.firstPrompt || turns[0]?.userPrompt}”
+                    </span>
+                  )}
                   {turns.length > 0 && (
-                    <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.5 text-[10px] font-mono">
+                    <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.5 text-[10px] font-mono shrink-0">
                       Turn {turns.length}
                     </span>
                   )}
                   {merges.length > 0 && (
-                    <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono">
+                    <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono shrink-0">
                       {merges.length} {merges.length === 1 ? 'merge' : 'merges'}
                     </span>
                   )}
@@ -482,12 +506,35 @@ export default function ArenaPage() {
               {/* Responses Arena Canvas */}
               <div className="flex-1 overflow-y-auto p-4 lg:p-6">
                 <div className="mx-auto max-w-6xl h-full flex flex-col space-y-4">
+                  {/* First Input Origin Banner (when in multi-turn conversation) */}
+                  {turns.length > 1 && turns[0] && (
+                    <div className="rounded-xl border border-border/80 bg-surface/70 p-3 shadow-sm text-xs transition-all">
+                      <div className="flex items-center justify-between text-[11px] text-text-muted mb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="flex h-2 w-2 rounded-full bg-primary/70" />
+                          <span className="font-medium text-foreground">Session Origin (Turn 1 Input)</span>
+                        </div>
+                        <span className="text-[10px] font-mono text-text-muted">
+                          {new Date(turns[0].createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <p className="text-xs text-text-secondary leading-relaxed pl-3 border-l-2 border-primary/40 italic">
+                        “{turns[0].userPrompt}”
+                      </p>
+                    </div>
+                  )}
+
                   {/* Current Active User Prompt (ChatGPT / Claude style message block) */}
                   {turns.length > 0 && (
                     <div className="flex justify-end my-1">
                       <div className="max-w-2xl rounded-2xl bg-surface-secondary px-4 py-3 border border-border shadow-card">
-                        <div className="flex items-center justify-between gap-3 mb-1 text-[11px] text-text-muted">
-                          <span className="font-semibold text-foreground">You</span>
+                        <div className="flex items-center justify-between gap-3 mb-1.5 text-[11px] text-text-muted">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-foreground">You</span>
+                            <span className="rounded-full bg-surface text-text-secondary border border-border px-2 py-0.2 text-[10px] font-mono">
+                              {turns.length === 1 ? 'Initial Prompt · Turn 1' : `Follow-up Prompt · Turn ${turns.length}`}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-1">
                             {selectedModels.map((m, idx) => (
                               <span

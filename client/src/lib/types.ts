@@ -47,6 +47,8 @@ export interface MessageTurn {
 export interface Thread {
   id: string;
   title: string;
+  firstPrompt?: string;
+  turnCount?: number;
   createdAt: string;
   updatedAt: string;
 }

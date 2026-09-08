@@ -18,6 +18,27 @@ interface SidebarProps {
   onToggleCollapse?: () => void;
 }
 
+function formatRelativeTime(dateStr?: string): string {
+  if (!dateStr) return '';
+  try {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays === 1) return '1d';
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  } catch {
+    return '';
+  }
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   threads,
   activeThreadId,
@@ -62,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
+    <aside className="flex h-full w-64 lg:w-72 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
       {/* Top Action Bar: New Arena & Collapse */}
       <div className="flex items-center gap-2 mb-2">
         <button
@@ -108,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="px-2 py-1 text-[11px] font-medium text-text-muted">
           {searchQuery ? 'Search Results' : 'Recent Turns'}
         </div>
-        <div className="mt-1 space-y-0.5">
+        <div className="mt-1 space-y-1">
           {threads.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-text-muted">
               No conversations yet. Fan-out a prompt to start.
@@ -116,27 +137,50 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ) : (
             threads.map((th) => {
               const isActive = th.id === activeThreadId;
+              const relTime = formatRelativeTime(th.updatedAt || th.createdAt);
               return (
                 <div
                   key={th.id}
                   onClick={() => onSelectThread(th.id)}
-                  className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-normal cursor-pointer transition-all ${
+                  className={`group relative flex flex-col rounded-xl px-2.5 py-2 text-xs cursor-pointer transition-all ${
                     isActive
                       ? 'bg-surface text-foreground font-medium shadow-sm border border-border'
-                      : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
+                      : 'text-text-secondary hover:bg-surface-hover hover:text-foreground border border-transparent'
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate">
-                    <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-foreground' : 'text-text-muted'}`} />
-                    <span className="truncate">{th.title}</span>
+                  <div className="flex items-center justify-between gap-1.5 w-full">
+                    <div className="flex items-center gap-2 truncate min-w-0">
+                      <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-foreground' : 'text-text-muted'}`} />
+                      <span className="truncate font-medium leading-snug">{th.title}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      {relTime && (
+                        <span className="text-[10px] text-text-muted group-hover:hidden transition-opacity">
+                          {relTime}
+                        </span>
+                      )}
+                      {(th.turnCount ?? 0) > 1 && (
+                        <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-surface-secondary border border-border text-text-muted">
+                          {th.turnCount}t
+                        </span>
+                      )}
+                      <button
+                        onClick={(e) => onDeleteThread(th.id, e)}
+                        className="hidden group-hover:flex items-center justify-center h-5 w-5 rounded hover:bg-surface hover:text-red-500 text-text-muted transition-all"
+                        title="Delete thread"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                  <button
-                    onClick={(e) => onDeleteThread(th.id, e)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-1 transition-opacity"
-                    title="Delete thread"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
+
+                  {/* First Input / Prompt Snippet (ChatGPT & Claude style) */}
+                  {th.firstPrompt && (
+                    <div className="mt-1 pl-5 text-[11px] text-text-muted line-clamp-1 truncate leading-tight opacity-75 font-normal">
+                      {th.firstPrompt}
+                    </div>
+                  )}
                 </div>
               );
             })

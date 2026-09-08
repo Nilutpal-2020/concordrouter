@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -206,13 +207,43 @@ func (s *SQLiteStore) CreateThread(title string) (*domain.Thread, error) {
 	}, nil
 }
 
+func cleanTitleFromPrompt(prompt string) string {
+	lines := strings.Split(prompt, "\n")
+	firstLine := strings.TrimSpace(lines[0])
+	for _, l := range lines {
+		trimmed := strings.TrimSpace(l)
+		if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
+			firstLine = trimmed
+			break
+		}
+	}
+	if len(firstLine) > 48 {
+		return firstLine[:45] + "..."
+	}
+	if firstLine == "" {
+		return "Arena Session"
+	}
+	return firstLine
+}
+
 func (s *SQLiteStore) GetThread(id string) (*domain.Thread, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	var th domain.Thread
-	err := s.db.QueryRow(`SELECT id, title, created_at, updated_at FROM threads WHERE id = ?`, id).
-		Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt)
+	err := s.db.QueryRow(`
+		SELECT 
+			t.id, 
+			t.title, 
+			t.created_at, 
+			t.updated_at,
+			COALESCE(
+				(SELECT tu.user_prompt FROM turns tu WHERE tu.thread_id = t.id ORDER BY tu.created_at ASC LIMIT 1),
+				''
+			) AS first_prompt,
+			(SELECT COUNT(*) FROM turns tu WHERE tu.thread_id = t.id) AS turn_count
+		FROM threads t WHERE t.id = ?`, id).
+		Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt, &th.FirstPrompt, &th.TurnCount)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +254,21 @@ func (s *SQLiteStore) ListThreads() ([]domain.Thread, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	rows, err := s.db.Query(`SELECT id, title, created_at, updated_at FROM threads ORDER BY updated_at DESC`)
+	query := `
+	SELECT 
+		t.id, 
+		t.title, 
+		t.created_at, 
+		t.updated_at,
+		COALESCE(
+			(SELECT tu.user_prompt FROM turns tu WHERE tu.thread_id = t.id ORDER BY tu.created_at ASC LIMIT 1),
+			''
+		) AS first_prompt,
+		(SELECT COUNT(*) FROM turns tu WHERE tu.thread_id = t.id) AS turn_count
+	FROM threads t 
+	ORDER BY t.updated_at DESC`
+
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -232,7 +277,7 @@ func (s *SQLiteStore) ListThreads() ([]domain.Thread, error) {
 	var threads []domain.Thread
 	for rows.Next() {
 		var th domain.Thread
-		if err := rows.Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt); err == nil {
+		if err := rows.Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt, &th.FirstPrompt, &th.TurnCount); err == nil {
 			threads = append(threads, th)
 		}
 	}
@@ -245,11 +290,20 @@ func (s *SQLiteStore) SearchThreads(query string) ([]domain.Thread, error) {
 
 	searchParam := "%" + query + "%"
 	sqlQuery := `
-	SELECT DISTINCT t.id, t.title, t.created_at, t.updated_at
+	SELECT 
+		t.id, 
+		t.title, 
+		t.created_at, 
+		t.updated_at,
+		COALESCE(
+			(SELECT tu.user_prompt FROM turns tu WHERE tu.thread_id = t.id ORDER BY tu.created_at ASC LIMIT 1),
+			''
+		) AS first_prompt,
+		(SELECT COUNT(*) FROM turns tu WHERE tu.thread_id = t.id) AS turn_count
 	FROM threads t
-	LEFT JOIN turns tu ON t.id = tu.thread_id
-	LEFT JOIN model_responses mr ON tu.id = mr.turn_id
-	WHERE t.title LIKE ? OR tu.user_prompt LIKE ? OR mr.content LIKE ?
+	WHERE t.title LIKE ? 
+	   OR t.id IN (SELECT DISTINCT thread_id FROM turns WHERE user_prompt LIKE ?)
+	   OR t.id IN (SELECT DISTINCT tu.thread_id FROM turns tu JOIN model_responses mr ON tu.id = mr.turn_id WHERE mr.content LIKE ?)
 	ORDER BY t.updated_at DESC
 	`
 	rows, err := s.db.Query(sqlQuery, searchParam, searchParam, searchParam)
@@ -261,7 +315,7 @@ func (s *SQLiteStore) SearchThreads(query string) ([]domain.Thread, error) {
 	var threads []domain.Thread
 	for rows.Next() {
 		var th domain.Thread
-		if err := rows.Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt); err == nil {
+		if err := rows.Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt, &th.FirstPrompt, &th.TurnCount); err == nil {
 			threads = append(threads, th)
 		}
 	}
@@ -289,8 +343,16 @@ func (s *SQLiteStore) CreateTurn(threadID string, userPrompt string) (*domain.Me
 		return nil, err
 	}
 
-	// Update thread updated_at timestamp
-	_, _ = s.db.Exec(`UPDATE threads SET updated_at = ? WHERE id = ?`, now, threadID)
+	// Auto-title thread from first prompt if title is default
+	var currentTitle string
+	_ = s.db.QueryRow(`SELECT title FROM threads WHERE id = ?`, threadID).Scan(&currentTitle)
+	if currentTitle == "New Arena Session" || currentTitle == "" {
+		newTitle := cleanTitleFromPrompt(userPrompt)
+		_, _ = s.db.Exec(`UPDATE threads SET title = ?, updated_at = ? WHERE id = ?`, newTitle, now, threadID)
+	} else {
+		// Update thread updated_at timestamp
+		_, _ = s.db.Exec(`UPDATE threads SET updated_at = ? WHERE id = ?`, now, threadID)
+	}
 
 	return &domain.MessageTurn{
 		ID:         turnID,
