@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"fmt"
 	"concordrouter/server/internal/domain"
 	"strings"
 	"time"
@@ -74,91 +75,138 @@ func (m *MockProvider) EstimateCost(req domain.ChatRequest) domain.CostEstimate 
 }
 
 func (m *MockProvider) Stream(ctx context.Context, req domain.ChatRequest) (<-chan domain.StreamChunk, error) {
-	out := make(chan domain.StreamChunk, 20)
+	out := make(chan domain.StreamChunk, 100)
 
-	var chunks []string
-	delay := 60 * time.Millisecond
+	prompt := strings.TrimSpace(req.Prompt)
+	if prompt == "" {
+		prompt = "the submitted query"
+	}
+
+	var fullMarkdown string
+	delay := 28 * time.Millisecond
 
 	switch req.Model {
 	case "mock-concise":
-		delay = 35 * time.Millisecond
-		chunks = []string{
-			"Here is a concise breakdown for **", req.Prompt, "**:\n\n",
-			"- **Key Point 1**: Streamlined architectural separation ensures zero blocking.\n",
-			"- **Key Point 2**: Goroutines distribute requests across providers concurrently.\n",
-			"- **Key Point 3**: Each pane renders independent SSE chunks in real-time.\n\n",
-			"**Summary Recommendation**: Pick the strongest attributes from each model during the merge phase.",
-		}
+		delay = 24 * time.Millisecond
+		fullMarkdown = fmt.Sprintf(
+			"Here is a concise, high-signal breakdown for **%s**:\n\n"+
+				"- **Core Architecture**: Decoupled asynchronous pipelines prevent downstream bottlenecks.\n"+
+				"- **Throughput & Concurrency**: Goroutines fan out concurrent requests across isolated model contexts.\n"+
+				"- **Fault Tolerance**: Per-pane circuit breaking and graceful fallback if a provider stalls.\n\n"+
+				"| Metric | Target | Status |\n"+
+				"| :--- | :--- | :--- |\n"+
+				"| Latency | < 500ms | Optimal |\n"+
+				"| Streaming | Real-time SSE | Active |\n"+
+				"| Accuracy | Cross-validated | Verified |\n\n"+
+				"**Summary Recommendation**: Cherry-pick structural clarity from this model during the merge stage.",
+			prompt,
+		)
 	case "mock-creative":
-		delay = 55 * time.Millisecond
-		chunks = []string{
-			"Let's look at **", req.Prompt, "** from a first-principles perspective.\n\n",
-			"Every LLM exhibits unique stylistic quirks. Model A might prioritize structural correctness, ",
-			"while Model B delivers vivid analogies and novel perspectives.\n\n",
-			"### Proposed Synthesis\n",
-			"1. Align paragraphs by core assertion.\n",
-			"2. Cherry-pick the best formulation of each argument.\n",
-			"3. Reconcile contradictions with direct user oversight.",
-		}
+		delay = 32 * time.Millisecond
+		fullMarkdown = fmt.Sprintf(
+			"Let's explore **%s** from a first-principles, divergent perspective.\n\n"+
+				"Every foundation model possesses a distinct cognitive bias. While one model leans into rigorous formality, "+
+				"another discovers elegant lateral abstractions and illuminating analogies.\n\n"+
+				"### Conceptual Angles\n"+
+				"1. **Semantic Alignment**: Mapping shared invariants before resolving peripheral disagreements.\n"+
+				"2. **Creative Synthesis**: Combining distinct strengths into a cohesive unified thesis.\n"+
+				"3. **Human Oversight**: The cherry-pick workbench gives you the final editorial authority.\n\n"+
+				"> *\"Consensus is not the elimination of difference, but the synthesis of divergent truths.\"*",
+			prompt,
+		)
 	default: // mock-verbose
-		delay = 50 * time.Millisecond
-		chunks = []string{
-			"### Comprehensive Analysis: ", req.Prompt, "\n\n",
-			"Multi-model orchestration unlocks resilience and truth-discovery. By fanning out a single query across disparate foundation models, we expose the underlying consensus as well as subtle divergences in reasoning.\n\n",
-			"```go\n",
-			"// Orchestrator concurrency pattern\n",
-			"go func(p Provider) {\n",
-			"    ch, _ := p.Stream(ctx, req)\n",
-			"    for chunk := range ch {\n",
-			"        sseBroker.Broadcast(chunk)\n",
-			"    }\n",
-			"}(provider)\n",
-			"```\n\n",
-			"#### Advantages of BYOA (Bring-Your-Own-Account):\n",
-			"- Zero platform quota bottlenecks or marked-up API costs.\n",
-			"- Client credentials remain securely encrypted at rest.\n",
-			"- Unrestricted access to full model context lengths.",
-		}
+		delay = 26 * time.Millisecond
+		fullMarkdown = fmt.Sprintf(
+			"### Comprehensive Technical Analysis: %s\n\n"+
+				"Multi-model orchestration unlocks resilience, eliminates vendor lock-in, and mitigates single-model hallucination blindspots. "+
+				"By fanning out prompts concurrently across heterogeneous engines, we expose the underlying consensus as well as subtle divergences.\n\n"+
+				"```go\n"+
+				"// Orchestrator concurrent stream dispatcher\n"+
+				"func (o *Orchestrator) DispatchStream(ctx context.Context, req ChatRequest) <-chan StreamChunk {\n"+
+				"    out := make(chan StreamChunk, 50)\n"+
+				"    go func() {\n"+
+				"        defer close(out)\n"+
+				"        for chunk := range provider.Stream(ctx, req) {\n"+
+				"            out <- chunk // Real-time token delivery\n"+
+				"        }\n"+
+				"    }()\n"+
+				"    return out\n"+
+				"}\n"+
+				"```\n\n"+
+				"#### Architectural Advantages of BYOA:\n"+
+				"- **Zero Proxy Markups**: Connect directly to official model APIs with zero platform overhead.\n"+
+				"- **Confidential Vault**: Keys encrypted locally with symmetric AES-256-GCM at rest.\n"+
+				"- **Full Model Capability**: Unrestricted access to context lengths and native tool use.",
+			prompt,
+		)
 	}
+
+	tokens := splitIntoStreamTokens(fullMarkdown)
 
 	go func() {
 		defer close(out)
 		fullText := ""
-		for _, part := range chunks {
+		tokenCount := 0
+
+		for _, tok := range tokens {
 			select {
 			case <-ctx.Done():
 				out <- domain.StreamChunk{
 					ProviderID: string(m.id),
 					Model:      req.Model,
-					Error:      "Stream cancelled by client",
+					Error:      "Stream cancelled by user",
 					Done:       true,
 					Timestamp:  time.Now(),
 				}
 				return
 			case <-time.After(delay):
-				fullText += part
+				fullText += tok
+				tokenCount++
 				out <- domain.StreamChunk{
 					ProviderID: string(m.id),
 					Model:      req.Model,
-					Delta:      part,
+					Delta:      tok,
 					FullText:   fullText,
-					Tokens:     len(strings.Fields(fullText)),
+					Tokens:     tokenCount,
 					Done:       false,
 					Timestamp:  time.Now(),
 				}
 			}
 		}
 
-		// Emit final done chunk
+		// Final completion chunk
 		out <- domain.StreamChunk{
 			ProviderID: string(m.id),
 			Model:      req.Model,
 			FullText:   fullText,
-			Tokens:     len(strings.Fields(fullText)),
+			Tokens:     tokenCount,
 			Done:       true,
 			Timestamp:  time.Now(),
 		}
 	}()
 
 	return out, nil
+}
+
+// splitIntoStreamTokens breaks markdown text into word/whitespace tokens for realistic streaming
+func splitIntoStreamTokens(text string) []string {
+	var tokens []string
+	var current strings.Builder
+
+	runes := []rune(text)
+	for i := 0; i < len(runes); i++ {
+		r := runes[i]
+		current.WriteRune(r)
+		if r == ' ' || r == '\n' || r == '\t' {
+			tokens = append(tokens, current.String())
+			current.Reset()
+		} else if i+1 < len(runes) && (runes[i+1] == '\n' || runes[i+1] == ' ' || runes[i+1] == '`') {
+			tokens = append(tokens, current.String())
+			current.Reset()
+		}
+	}
+	if current.Len() > 0 {
+		tokens = append(tokens, current.String())
+	}
+	return tokens
 }

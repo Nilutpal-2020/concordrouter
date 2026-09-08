@@ -164,21 +164,34 @@ export async function streamSynthesis(
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+        const blocks = buffer.split(/\r?\n\r?\n/);
+        buffer = blocks.pop() || '';
 
-        for (const block of lines) {
+        for (const block of blocks) {
           if (!block.trim()) continue;
-          const dataMatch = block.match(/^data:\s*(.+)$/m);
-          if (dataMatch) {
-            try {
-              const parsed = JSON.parse(dataMatch[1].trim());
-              if (parsed.error) {
-                onError(parsed.error);
-              } else if (parsed.delta !== undefined || parsed.fullText !== undefined) {
-                onChunk(parsed);
-              }
-            } catch (e) {}
+          let eventType = 'message';
+          const dataLines: string[] = [];
+
+          for (const line of block.split(/\r?\n/)) {
+            if (line.startsWith('event:')) {
+              eventType = line.replace(/^event:\s*/, '').trim();
+            } else if (line.startsWith('data:')) {
+              dataLines.push(line.replace(/^data:\s*/, ''));
+            }
+          }
+
+          if (dataLines.length === 0) continue;
+          const dataStr = dataLines.join('\n').trim();
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.error) {
+              onError(parsed.error);
+            } else if (parsed.delta !== undefined || parsed.fullText !== undefined) {
+              onChunk(parsed);
+            }
+          } catch (e) {
+            console.error('Error parsing synthesis SSE event:', e, dataStr);
           }
         }
       }
@@ -245,18 +258,24 @@ export async function streamFanOut(
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+        const blocks = buffer.split(/\r?\n\r?\n/);
+        buffer = blocks.pop() || '';
 
-        for (const block of lines) {
+        for (const block of blocks) {
           if (!block.trim()) continue;
-          const eventMatch = block.match(/^event:\s*(.+)$/m);
-          const dataMatch = block.match(/^data:\s*(.+)$/m);
+          let eventType = 'message';
+          const dataLines: string[] = [];
 
-          const eventType = eventMatch ? eventMatch[1].trim() : 'message';
-          const dataStr = dataMatch ? dataMatch[1].trim() : '';
+          for (const line of block.split(/\r?\n/)) {
+            if (line.startsWith('event:')) {
+              eventType = line.replace(/^event:\s*/, '').trim();
+            } else if (line.startsWith('data:')) {
+              dataLines.push(line.replace(/^data:\s*/, ''));
+            }
+          }
 
-          if (!dataStr) continue;
+          if (dataLines.length === 0) continue;
+          const dataStr = dataLines.join('\n').trim();
 
           try {
             const parsed = JSON.parse(dataStr);
@@ -324,21 +343,34 @@ export async function streamRetry(
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n\n');
-        buffer = lines.pop() || '';
+        const blocks = buffer.split(/\r?\n\r?\n/);
+        buffer = blocks.pop() || '';
 
-        for (const block of lines) {
+        for (const block of blocks) {
           if (!block.trim()) continue;
-          const dataMatch = block.match(/^data:\s*(.+)$/m);
-          if (dataMatch) {
-            try {
-              const parsed = JSON.parse(dataMatch[1].trim());
-              if (parsed.error) {
-                onError(parsed.error);
-              } else if (parsed.providerId) {
-                onChunk(parsed);
-              }
-            } catch (e) {}
+          let eventType = 'message';
+          const dataLines: string[] = [];
+
+          for (const line of block.split(/\r?\n/)) {
+            if (line.startsWith('event:')) {
+              eventType = line.replace(/^event:\s*/, '').trim();
+            } else if (line.startsWith('data:')) {
+              dataLines.push(line.replace(/^data:\s*/, ''));
+            }
+          }
+
+          if (dataLines.length === 0) continue;
+          const dataStr = dataLines.join('\n').trim();
+
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.error) {
+              onError(parsed.error);
+            } else if (parsed.providerId) {
+              onChunk(parsed);
+            }
+          } catch (e) {
+            console.error('Error parsing retry SSE event:', e, dataStr);
           }
         }
       }

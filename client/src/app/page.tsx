@@ -37,7 +37,7 @@ import { SecurityView } from '@/components/views/SecurityView';
 import { FaqView } from '@/components/views/FaqView';
 import { AboutView } from '@/components/views/AboutView';
 
-import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History, ArrowUp } from 'lucide-react';
+import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History, ArrowUp, Loader2 } from 'lucide-react';
 
 export default function ArenaPage() {
   const [currentView, setCurrentView] = useState<AppView>('arena');
@@ -57,6 +57,7 @@ export default function ArenaPage() {
   ]);
 
   const [promptInput, setPromptInput] = useState<string>('');
+  const [streamingPrompt, setStreamingPrompt] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   const [activeResponses, setActiveResponses] = useState<Record<string, ModelResponse>>({});
   const abortStreamRef = useRef<(() => void) | null>(null);
@@ -211,6 +212,7 @@ export default function ArenaPage() {
 
     const currentPrompt = promptInput.trim();
     setPromptInput('');
+    setStreamingPrompt(currentPrompt);
 
     let currentThreadId = activeThreadId;
     if (!currentThreadId) {
@@ -300,9 +302,11 @@ export default function ArenaPage() {
       (err) => {
         console.error('Fan-out stream error:', err);
         setIsStreaming(false);
+        setStreamingPrompt('');
       },
       () => {
         setIsStreaming(false);
+        setStreamingPrompt('');
         if (currentThreadId) {
           handleSelectThread(currentThreadId);
         }
@@ -319,6 +323,7 @@ export default function ArenaPage() {
       abortStreamRef.current = null;
     }
     setIsStreaming(false);
+    setStreamingPrompt('');
   };
 
   const handleRetryPane = async (target: TargetModel) => {
@@ -337,6 +342,7 @@ export default function ArenaPage() {
     }));
 
     setIsStreaming(true);
+    setStreamingPrompt(lastTurn.userPrompt);
 
     await streamRetry(
       activeThreadId,
@@ -364,9 +370,11 @@ export default function ArenaPage() {
       (err) => {
         console.error('Retry error:', err);
         setIsStreaming(false);
+        setStreamingPrompt('');
       },
       () => {
         setIsStreaming(false);
+        setStreamingPrompt('');
       }
     );
   };
@@ -496,7 +504,7 @@ export default function ArenaPage() {
               <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:px-6 lg:py-3">
                 <div className="w-full max-w-[1600px] mx-auto h-full flex flex-col space-y-3">
                   {/* User Prompt Anchor */}
-                  {turns.length > 0 && (
+                  {(turns.length > 0 || streamingPrompt) && (
                     <div className="rounded-xl border border-border bg-surface-secondary/50 p-3 text-xs shadow-sm transition-all">
                       <div className="flex items-center justify-between gap-2 mb-1.5">
                         <div className="flex items-center gap-2">
@@ -507,6 +515,12 @@ export default function ArenaPage() {
                           {turns.length > 1 && (
                             <span className="rounded bg-surface text-text-muted px-1.5 py-0.2 text-[10px] font-mono border border-border">
                               Turn {turns.length}
+                            </span>
+                          )}
+                          {isStreaming && (
+                            <span className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full animate-pulse">
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              streaming fan-out...
                             </span>
                           )}
                         </div>
@@ -524,16 +538,17 @@ export default function ArenaPage() {
                       </div>
 
                       <p className="text-xs sm:text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-7">
-                        {turns[turns.length - 1]?.userPrompt}
+                        {streamingPrompt || turns[turns.length - 1]?.userPrompt}
                       </p>
                     </div>
                   )}
 
                   <ArenaPanes
-                    prompt={turns[turns.length - 1]?.userPrompt || promptInput}
+                    prompt={streamingPrompt || turns[turns.length - 1]?.userPrompt || promptInput}
                     selectedModels={selectedModels}
                     responses={activeResponses}
                     isStreaming={isStreaming}
+                    onStopStream={handleStopStream}
                     onRetryPane={handleRetryPane}
                     onOpenMerge={handleOpenMerge}
                     onSelectPromptTemplate={(p) => {
@@ -564,7 +579,7 @@ export default function ArenaPage() {
                         }
                       }}
                       rows={Math.min(5, Math.max(1, promptInput.split('\n').length))}
-                      placeholder={`Message ${selectedModels.length} models simultaneously...`}
+                      placeholder={`Prompt ${selectedModels.length} models...`}
                       className="w-full bg-transparent px-2.5 py-1 text-xs sm:text-sm text-foreground placeholder-text-muted focus:outline-none resize-none font-sans"
                     />
 

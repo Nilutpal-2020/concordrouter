@@ -24,6 +24,8 @@ import {
   Scale,
   FileCode2,
   Zap,
+  Square,
+  Loader2,
 } from 'lucide-react';
 
 interface ArenaPanesProps {
@@ -31,6 +33,7 @@ interface ArenaPanesProps {
   selectedModels: TargetModel[];
   responses: Record<string, ModelResponse>;
   isStreaming: boolean;
+  onStopStream?: () => void;
   onRetryPane: (target: TargetModel) => void;
   onOpenMerge: (sourceModelA: string, sourceModelB: string) => void;
   onSelectPromptTemplate?: (promptText: string) => void;
@@ -44,6 +47,7 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
   selectedModels,
   responses,
   isStreaming,
+  onStopStream,
   onRetryPane,
   onOpenMerge,
   onSelectPromptTemplate,
@@ -53,6 +57,24 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('grid');
   const [textSize, setTextSize] = useState<TextSize>('comfortable');
   const [focusedModelKey, setFocusedModelKey] = useState<string | null>(null);
+  const [elapsedMs, setElapsedMs] = useState<number>(0);
+
+  // Live timer tick during streaming
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isStreaming) {
+      const start = Date.now();
+      setElapsedMs(0);
+      interval = setInterval(() => {
+        setElapsedMs(Date.now() - start);
+      }, 100);
+    } else {
+      setElapsedMs(0);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isStreaming]);
 
   const completedKeys = selectedModels
     .map((m) => `${m.providerId}:${m.model}`)
@@ -195,10 +217,22 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
           </div>
 
           {isStreaming && (
-            <span className="flex items-center gap-1 text-[11px] font-mono text-foreground animate-pulse bg-surface-secondary border border-border px-2 py-0.5 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#10a37f] animate-ping" />
-              Streaming...
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Streaming ({(elapsedMs / 1000).toFixed(1)}s)...
+              </span>
+              {onStopStream && (
+                <button
+                  onClick={onStopStream}
+                  className="flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-2.5 py-0.5 rounded-full transition-all active:scale-95"
+                  title="Stop generating active stream"
+                >
+                  <Square className="h-2.5 w-2.5 fill-current" />
+                  Stop
+                </button>
+              )}
+            </div>
           )}
 
           {/* Compact Inline Gating / Reconcile Pill */}
@@ -458,14 +492,19 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
 
                     {/* Pane Actions & Metrics */}
                     <div className="flex items-center gap-1 shrink-0">
-                      {resp?.latencyMs ? (
+                      {isCurrentStreaming ? (
+                        <span className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-medium animate-pulse mr-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                          {(elapsedMs / 1000).toFixed(1)}s · {resp?.tokens || 0} tok
+                        </span>
+                      ) : resp?.latencyMs ? (
                         <span className="flex items-center gap-1 text-[10px] text-text-muted font-mono mr-1">
                           <Clock className="h-3 w-3" />
                           {(resp.latencyMs / 1000).toFixed(2)}s
                         </span>
                       ) : null}
 
-                      {tokensPerSec && (
+                      {tokensPerSec && !isCurrentStreaming && (
                         <span className="text-[10px] text-text-secondary font-mono mr-1">
                           {tokensPerSec} t/s
                         </span>
@@ -525,9 +564,18 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                     )}
 
                     {isCurrentStreaming && !resp?.content && (
-                      <div className="flex items-center gap-2 text-text-secondary text-xs py-3">
-                        <span className="streaming-cursor" />
-                        <span className="animate-pulse">Waiting for {target.model}...</span>
+                      <div className="space-y-3 py-4 px-1">
+                        <div className="flex items-center gap-2 text-xs font-mono text-foreground/80">
+                          <span className="streaming-cursor" />
+                          <span className="animate-pulse font-medium">
+                            {target.model} is generating tokens... ({(elapsedMs / 1000).toFixed(1)}s)
+                          </span>
+                        </div>
+                        <div className="space-y-2 max-w-sm animate-pulse opacity-40">
+                          <div className="h-2.5 w-full bg-surface-secondary rounded" />
+                          <div className="h-2.5 w-4/5 bg-surface-secondary rounded" />
+                          <div className="h-2.5 w-3/5 bg-surface-secondary rounded" />
+                        </div>
                       </div>
                     )}
 
@@ -562,7 +610,14 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                         <span>{resp.tokens || 0} tokens</span>
                         <span>{resp.content ? resp.content.split(/\s+/).filter(Boolean).length : 0} words</span>
                       </div>
-                      <span className="capitalize">{resp.status}</span>
+                      {isCurrentStreaming ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-medium font-mono animate-pulse flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                          streaming
+                        </span>
+                      ) : (
+                        <span className="capitalize">{resp.status}</span>
+                      )}
                     </div>
                   )}
                 </div>
