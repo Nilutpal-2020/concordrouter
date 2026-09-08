@@ -132,9 +132,10 @@ make build
 - [x] **Phase 1 — BYOA Credentials**: AES-256-GCM encryption, live key validation, settings UI.
 - [x] **Phase 2 — Multi-Provider Fan-Out**: Concurrent goroutine dispatch, independent streaming panes, per-pane retries.
 - [x] **Phase 3 — Manual Cherry-Pick Merge**: Prose segmentation (paragraphs, sentences, code blocks, lists), 3-column interactive merge workbench, turn continuation.
-- [ ] **Phase 4 — Merge Gating Heuristics**: Length-based skip & cosine similarity duplicate detection.
-- [ ] **Phase 5 — Semantic Diff & Alignment**: Sequence alignment (Needleman-Wunsch) with NLI classification (agree, paraphrase, conflict).
-- [ ] **Phase 6 — AI-Assisted Synthesis Merge**: Reconciled AI synthesis generation with custom merge prompt.
+- [x] **Phase 4 — Merge Gating Heuristics**: Length-based skip & cosine similarity duplicate detection.
+- [x] **Phase 5 — Semantic Diff & Alignment**: Sequence alignment (Needleman-Wunsch) with relation classification (agree, paraphrase, conflict) and interactive heatmap matrix.
+- [x] **Phase 6 — AI-Assisted Synthesis Merge**: Reconciled AI synthesis generation with custom merge prompt and trust-level separation.
+- [x] **Phase 7 — Polish & Expansion**: Thread keyword search, Markdown/JSON export, merge version history, and cassette fixture testing across all adapters.
 
 ---
 

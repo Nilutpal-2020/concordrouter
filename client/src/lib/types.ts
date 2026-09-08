@@ -70,6 +70,30 @@ export interface MergeRecord {
   createdAt: string;
 }
 
+export interface GatingDecision {
+  eligible: boolean;
+  isConsensus: boolean;
+  similarityScore: number;
+  badgeText: string;
+  reason: string;
+}
+
+export interface AlignedPair {
+  id: string;
+  leftChunk?: ChunkSegment;
+  rightChunk?: ChunkSegment;
+  score: number;
+  relation: 'agree' | 'paraphrase' | 'conflict' | 'unique_left' | 'unique_right';
+}
+
+export interface AlignmentResult {
+  pairs: AlignedPair[];
+  similarityMatrix: number[][];
+  leftSegments: ChunkSegment[];
+  rightSegments: ChunkSegment[];
+  overallAgreement: number;
+}
+
 export interface StreamChunk {
   providerId: string;
   model: string;
@@ -80,3 +104,4 @@ export interface StreamChunk {
   error?: string;
   timestamp: string;
 }
+

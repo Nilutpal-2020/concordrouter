@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -71,8 +72,10 @@ func (s *Server) setupRoutes() {
 
 		// Threads & Conversations
 		api.Get("/threads", s.handleListThreads)
+		api.Get("/threads/search", s.handleSearchThreads)
 		api.Post("/threads", s.handleCreateThread)
 		api.Get("/threads/{id}", s.handleGetThread)
+		api.Get("/threads/{id}/export", s.handleExportThread)
 		api.Delete("/threads/{id}", s.handleDeleteThread)
 
 		// Message Turns & Streaming Fan-out
@@ -81,6 +84,9 @@ func (s *Server) setupRoutes() {
 
 		// Merges & Segmentation
 		api.Post("/segment", s.handleSegmentText)
+		api.Post("/merge/gate", s.handleMergeGate)
+		api.Post("/merge/align", s.handleMergeAlign)
+		api.Post("/merge/synthesize", s.handleMergeSynthesize)
 		api.Post("/threads/{id}/merge", s.handleSaveMerge)
 		api.Get("/threads/{id}/merges", s.handleListMerges)
 	})
@@ -234,6 +240,87 @@ func (s *Server) handleGetThread(w http.ResponseWriter, r *http.Request) {
 		"turns":  turns,
 		"merges": merges,
 	})
+}
+
+// Handler: Search Threads
+func (s *Server) handleSearchThreads(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		s.handleListThreads(w, r)
+		return
+	}
+
+	threads, err := s.store.SearchThreads(q)
+	if err != nil {
+		jsonError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if threads == nil {
+		threads = []domain.Thread{}
+	}
+	jsonResp(w, http.StatusOK, map[string]interface{}{"threads": threads})
+}
+
+// Handler: Export Thread to Markdown or JSON
+func (s *Server) handleExportThread(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "markdown"
+	}
+
+	th, err := s.store.GetThread(id)
+	if err != nil {
+		jsonError(w, http.StatusNotFound, "Thread not found")
+		return
+	}
+
+	turns, _ := s.store.ListTurns(id)
+	merges, _ := s.store.ListMerges(id)
+
+	if format == "json" {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"thread_%s.json\"", id))
+		jsonResp(w, http.StatusOK, map[string]interface{}{
+			"thread": th,
+			"turns":  turns,
+			"merges": merges,
+		})
+		return
+	}
+
+	// Format as clean Markdown
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("# %s\n\n", th.Title))
+	sb.WriteString(fmt.Sprintf("*Exported from ConcordRouter on %s*\n\n---\n\n", time.Now().Format("2006-01-02 15:04:05")))
+
+	for turnIdx, turn := range turns {
+		sb.WriteString(fmt.Sprintf("## Turn %d\n\n", turnIdx+1))
+		sb.WriteString(fmt.Sprintf("**Prompt:**\n> %s\n\n", turn.UserPrompt))
+
+		sb.WriteString("### Model Responses\n\n")
+		for modelKey, resp := range turn.Responses {
+			sb.WriteString(fmt.Sprintf("#### %s\n\n", modelKey))
+			sb.WriteString(resp.Content)
+			sb.WriteString("\n\n")
+		}
+
+		sb.WriteString("---\n\n")
+	}
+
+	if len(merges) > 0 {
+		sb.WriteString("## Reconciled Merges\n\n")
+		for mergeIdx, m := range merges {
+			sb.WriteString(fmt.Sprintf("### Merge %d (%s vs %s)\n\n", mergeIdx+1, strings.Join(m.SourceModels, " & "), m.Strategy))
+			sb.WriteString(m.MergedText)
+			sb.WriteString("\n\n---\n\n")
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/markdown; charset=utf-8")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"thread_%s.md\"", id))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(sb.String()))
 }
 
 // Handler: Delete Thread
@@ -427,6 +514,108 @@ func (s *Server) handleListMerges(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonResp(w, http.StatusOK, map[string]interface{}{"merges": merges})
+}
+
+// Handler: Evaluate Merge Gating Heuristics (Phase 4)
+func (s *Server) handleMergeGate(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Prompt    string `json:"prompt"`
+		ResponseA string `json:"responseA"`
+		ResponseB string `json:"responseB"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	decision := merge.EvaluateMergeGating(body.Prompt, body.ResponseA, body.ResponseB)
+	jsonResp(w, http.StatusOK, decision)
+}
+
+// Handler: Compute Semantic Alignment & Similarity Matrix (Phase 5)
+func (s *Server) handleMergeAlign(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ModelALabel string `json:"modelALabel"`
+		ResponseA   string `json:"responseA"`
+		ModelBLabel string `json:"modelBLabel"`
+		ResponseB   string `json:"responseB"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	if body.ModelALabel == "" {
+		body.ModelALabel = "Model A"
+	}
+	if body.ModelBLabel == "" {
+		body.ModelBLabel = "Model B"
+	}
+
+	segsA := merge.SegmentText(body.ResponseA, body.ModelALabel)
+	segsB := merge.SegmentText(body.ResponseB, body.ModelBLabel)
+
+	result := merge.AlignNeedlemanWunsch(segsA, segsB)
+	jsonResp(w, http.StatusOK, result)
+}
+
+// Handler: AI-Assisted Synthesis Streaming (Phase 6)
+func (s *Server) handleMergeSynthesize(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		ThreadID       string                      `json:"threadId"`
+		Prompt         string                      `json:"prompt"`
+		ModelALabel    string                      `json:"modelALabel"`
+		ResponseA      string                      `json:"responseA"`
+		ModelBLabel    string                      `json:"modelBLabel"`
+		ResponseB      string                      `json:"responseB"`
+		SynthesisModel orchestrator.TargetModelSpec `json:"synthesisModel"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	if body.SynthesisModel.Model == "" {
+		body.SynthesisModel = orchestrator.TargetModelSpec{
+			ProviderID: domain.ProviderMock,
+			Model:      "mock-concise",
+		}
+	}
+
+	synthesisPrompt := merge.BuildSynthesisPrompt(
+		body.Prompt,
+		body.ModelALabel,
+		body.ResponseA,
+		body.ModelBLabel,
+		body.ResponseB,
+	)
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	stream, err := s.orchestrator.RetryModel(r.Context(), body.ThreadID, "synthesis_temp", synthesisPrompt, nil, body.SynthesisModel)
+	if err != nil {
+		errData, _ := json.Marshal(map[string]string{"error": err.Error()})
+		fmt.Fprintf(w, "event: error\ndata: %s\n\n", errData)
+		flusher.Flush()
+		return
+	}
+
+	for chunk := range stream {
+		data, _ := json.Marshal(chunk)
+		fmt.Fprintf(w, "event: chunk\ndata: %s\n\n", data)
+		flusher.Flush()
+	}
+
+	fmt.Fprintf(w, "event: complete\ndata: {\"done\":true}\n\n")
+	flusher.Flush()
 }
 
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {

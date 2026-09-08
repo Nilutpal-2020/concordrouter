@@ -24,6 +24,7 @@ type Store interface {
 	CreateThread(title string) (*domain.Thread, error)
 	GetThread(id string) (*domain.Thread, error)
 	ListThreads() ([]domain.Thread, error)
+	SearchThreads(query string) ([]domain.Thread, error)
 	DeleteThread(id string) error
 
 	// Turns & Responses
@@ -223,6 +224,35 @@ func (s *SQLiteStore) ListThreads() ([]domain.Thread, error) {
 	defer s.mu.Unlock()
 
 	rows, err := s.db.Query(`SELECT id, title, created_at, updated_at FROM threads ORDER BY updated_at DESC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var threads []domain.Thread
+	for rows.Next() {
+		var th domain.Thread
+		if err := rows.Scan(&th.ID, &th.Title, &th.CreatedAt, &th.UpdatedAt); err == nil {
+			threads = append(threads, th)
+		}
+	}
+	return threads, nil
+}
+
+func (s *SQLiteStore) SearchThreads(query string) ([]domain.Thread, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	searchParam := "%" + query + "%"
+	sqlQuery := `
+	SELECT DISTINCT t.id, t.title, t.created_at, t.updated_at
+	FROM threads t
+	LEFT JOIN turns tu ON t.id = tu.thread_id
+	LEFT JOIN model_responses mr ON tu.id = mr.turn_id
+	WHERE t.title LIKE ? OR tu.user_prompt LIKE ? OR mr.content LIKE ?
+	ORDER BY t.updated_at DESC
+	`
+	rows, err := s.db.Query(sqlQuery, searchParam, searchParam, searchParam)
 	if err != nil {
 		return nil, err
 	}

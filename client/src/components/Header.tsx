@@ -1,15 +1,16 @@
-'use client';
-
 import React from 'react';
 import { TargetModel, ProviderStatus } from '@/lib/types';
-import { Layers, Key, Plus, ShieldCheck, Sparkles } from 'lucide-react';
+import { Layers, Key, Plus, Download, History } from 'lucide-react';
 
 interface HeaderProps {
   threadTitle: string;
   selectedModels: TargetModel[];
   providers: ProviderStatus[];
+  mergeCount: number;
   onOpenModelSelector: () => void;
   onOpenSettings: () => void;
+  onOpenExport: () => void;
+  onOpenMergeHistory: () => void;
   onNewChat: () => void;
   onToggleSidebar: () => void;
 }
@@ -18,8 +19,11 @@ export const Header: React.FC<HeaderProps> = ({
   threadTitle,
   selectedModels,
   providers,
+  mergeCount,
   onOpenModelSelector,
   onOpenSettings,
+  onOpenExport,
+  onOpenMergeHistory,
   onNewChat,
 }) => {
   const connectedCount = providers.filter((p) => p.isConnected).length;
@@ -62,6 +66,31 @@ export const Header: React.FC<HeaderProps> = ({
             {selectedModels.length} {selectedModels.length === 1 ? 'Model' : 'Models'} Selected
           </span>
           <span className="text-slate-400 text-[10px] bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700">Change</span>
+        </button>
+
+        {/* Merges History Button */}
+        {mergeCount > 0 && (
+          <button
+            onClick={onOpenMergeHistory}
+            className="flex items-center gap-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 px-3 py-1.5 border border-slate-800 text-xs font-medium text-slate-200 transition-all"
+            title="View Reconciled Merges History"
+          >
+            <History className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Merges</span>
+            <span className="rounded-full bg-slate-800 px-1.5 py-0.2 text-[10px] text-emerald-400 border border-emerald-500/20">
+              {mergeCount}
+            </span>
+          </button>
+        )}
+
+        {/* Export Button */}
+        <button
+          onClick={onOpenExport}
+          className="flex items-center gap-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 px-3 py-1.5 border border-slate-800 text-xs font-medium text-slate-200 transition-all"
+          title="Export Session (Markdown / JSON)"
+        >
+          <Download className="h-3.5 w-3.5 text-blue-400" />
+          <span className="hidden sm:inline">Export</span>
         </button>
 
         {/* BYOA Settings Button */}

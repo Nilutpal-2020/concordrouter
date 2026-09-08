@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Thread,
   MessageTurn,
+  MergeRecord,
   ProviderStatus,
   TargetModel,
   ModelResponse,
@@ -12,6 +13,7 @@ import {
 import {
   fetchProviders,
   fetchThreads,
+  searchThreads,
   createThread,
   fetchThreadDetails,
   deleteThread,
@@ -24,14 +26,19 @@ import { ArenaPanes } from '@/components/ArenaPanes';
 import { ProviderSettingsModal } from '@/components/ProviderSettingsModal';
 import { ModelSelectorModal } from '@/components/ModelSelectorModal';
 import { MergeWorkbench } from '@/components/MergeWorkbench';
+import { ExportModal } from '@/components/ExportModal';
+import { MergeHistoryModal } from '@/components/MergeHistoryModal';
 import { Send, Sparkles, Layers, StopCircle, CornerDownLeft } from 'lucide-react';
 
 export default function ArenaPage() {
   const [providers, setProviders] = useState<ProviderStatus[]>([]);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [activeThread, setActiveThread] = useState<Thread | null>(null);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
   const [activeThreadTitle, setActiveThreadTitle] = useState<string>('New Arena Session');
   const [turns, setTurns] = useState<MessageTurn[]>([]);
+  const [merges, setMerges] = useState<MergeRecord[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Target Models selected for fan-out (Default: 2 mock models or connected providers)
   const [selectedModels, setSelectedModels] = useState<TargetModel[]>([
@@ -47,6 +54,8 @@ export default function ArenaPage() {
   // Modals
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isModelSelectorOpen, setIsModelSelectorOpen] = useState<boolean>(false);
+  const [isExportOpen, setIsExportOpen] = useState<boolean>(false);
+  const [isMergeHistoryOpen, setIsMergeHistoryOpen] = useState<boolean>(false);
   const [mergeState, setMergeState] = useState<{
     isOpen: boolean;
     turnId: string;
@@ -88,9 +97,11 @@ export default function ArenaPage() {
   const handleSelectThread = async (threadId: string) => {
     try {
       const data = await fetchThreadDetails(threadId);
+      setActiveThread(data.thread);
       setActiveThreadId(data.thread.id);
       setActiveThreadTitle(data.thread.title);
       setTurns(data.turns || []);
+      setMerges(data.merges || []);
 
       if (data.turns && data.turns.length > 0) {
         const lastTurn = data.turns[data.turns.length - 1];
@@ -103,13 +114,30 @@ export default function ArenaPage() {
     }
   };
 
+  const handleSearch = async (q: string) => {
+    setSearchQuery(q);
+    try {
+      if (q.trim()) {
+        const results = await searchThreads(q);
+        setThreads(results);
+      } else {
+        const allThreads = await fetchThreads();
+        setThreads(allThreads);
+      }
+    } catch (err) {
+      console.error('Search error:', err);
+    }
+  };
+
   const handleNewChat = async () => {
     try {
       const newTh = await createThread('New Arena Session');
       setThreads((prev) => [newTh, ...prev]);
+      setActiveThread(newTh);
       setActiveThreadId(newTh.id);
       setActiveThreadTitle(newTh.title);
       setTurns([]);
+      setMerges([]);
       setActiveResponses({});
       setPromptInput('');
     } catch (err) {
@@ -316,6 +344,8 @@ export default function ArenaPage() {
         threads={threads}
         activeThreadId={activeThreadId}
         providers={providers}
+        searchQuery={searchQuery}
+        onSearchChange={handleSearch}
         onSelectThread={handleSelectThread}
         onNewThread={handleNewChat}
         onDeleteThread={handleDeleteThread}
@@ -328,8 +358,11 @@ export default function ArenaPage() {
           threadTitle={activeThreadTitle}
           selectedModels={selectedModels}
           providers={providers}
+          mergeCount={merges.length}
           onOpenModelSelector={() => setIsModelSelectorOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenExport={() => setIsExportOpen(true)}
+          onOpenMergeHistory={() => setIsMergeHistoryOpen(true)}
           onNewChat={handleNewChat}
           onToggleSidebar={() => {}}
         />
@@ -338,6 +371,7 @@ export default function ArenaPage() {
         <div className="flex-1 overflow-y-auto p-4 lg:p-6">
           <div className="mx-auto max-w-7xl h-full flex flex-col">
             <ArenaPanes
+              prompt={turns[turns.length - 1]?.userPrompt || promptInput}
               selectedModels={selectedModels}
               responses={activeResponses}
               isStreaming={isStreaming}
@@ -416,17 +450,36 @@ export default function ArenaPage() {
         }}
       />
 
-      {/* Merge Workbench Modal (Phase 3) */}
+      {/* Merge Workbench Modal (Phases 3, 5, 6) */}
       <MergeWorkbench
         isOpen={mergeState.isOpen}
         onClose={() => setMergeState((prev) => ({ ...prev, isOpen: false }))}
         threadId={activeThreadId || ''}
         turnId={mergeState.turnId}
+        userPrompt={turns[turns.length - 1]?.userPrompt || ''}
         modelAKey={mergeState.modelAKey}
         modelBKey={mergeState.modelBKey}
         responseA={activeResponses[mergeState.modelAKey]}
         responseB={activeResponses[mergeState.modelBKey]}
+        availableModels={selectedModels}
         onContinueFromMerge={handleContinueFromMerge}
+      />
+
+      {/* Export Modal (Phase 7) */}
+      <ExportModal
+        isOpen={isExportOpen}
+        onClose={() => setIsExportOpen(false)}
+        thread={activeThread}
+        turns={turns}
+        merges={merges}
+      />
+
+      {/* Merge History Modal (Phase 7) */}
+      <MergeHistoryModal
+        isOpen={isMergeHistoryOpen}
+        onClose={() => setIsMergeHistoryOpen(false)}
+        merges={merges}
+        onInjectDraft={handleContinueFromMerge}
       />
     </div>
   );

@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
-import { TargetModel, ModelResponse } from '@/lib/types';
-import { Cpu, RefreshCw, Copy, Check, GitMerge, AlertCircle, Clock, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TargetModel, ModelResponse, GatingDecision } from '@/lib/types';
+import { evaluateMergeGating } from '@/lib/api';
+import { Cpu, RefreshCw, Copy, Check, GitMerge, AlertCircle, Clock, Sparkles, CheckCircle2 } from 'lucide-react';
 
 interface ArenaPanesProps {
+  prompt?: string;
   selectedModels: TargetModel[];
   responses: Record<string, ModelResponse>;
   isStreaming: boolean;
@@ -13,13 +15,41 @@ interface ArenaPanesProps {
 }
 
 export const ArenaPanes: React.FC<ArenaPanesProps> = ({
+  prompt = '',
   selectedModels,
   responses,
   isStreaming,
   onRetryPane,
   onOpenMerge,
 }) => {
-  const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [gatingDecision, setGatingDecision] = useState<GatingDecision | null>(null);
+
+  const completedKeys = selectedModels
+    .map((m) => `${m.providerId}:${m.model}`)
+    .filter((k) => responses[k]?.status === 'completed' && responses[k]?.content);
+
+  // Phase 4: Gating Evaluation
+  useEffect(() => {
+    if (completedKeys.length >= 2 && !isStreaming) {
+      const respA = responses[completedKeys[0]]?.content || '';
+      const respB = responses[completedKeys[1]]?.content || '';
+
+      evaluateMergeGating(prompt, respA, respB)
+        .then((decision) => setGatingDecision(decision))
+        .catch(() => {
+          setGatingDecision({
+            eligible: true,
+            isConsensus: false,
+            similarityScore: 0.5,
+            badgeText: 'Reconcile Answers',
+            reason: '',
+          });
+        });
+    } else {
+      setGatingDecision(null);
+    }
+  }, [completedKeys.length, isStreaming, prompt]);
 
   const handleCopy = (key: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -27,7 +57,6 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Determine grid columns dynamically based on number of models (1, 2, 3, or 4)
   const gridColsClass =
     selectedModels.length === 1
       ? 'grid-cols-1'
@@ -37,32 +66,52 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
       ? 'grid-cols-1 md:grid-cols-3'
       : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4';
 
-  const completedKeys = selectedModels
-    .map((m) => `${m.providerId}:${m.model}`)
-    .filter((k) => responses[k]?.status === 'completed' && responses[k]?.content);
-
   return (
     <div className="flex flex-col h-full space-y-3">
-      {/* Merge Action Banner when 2+ models are completed */}
-      {completedKeys.length >= 2 && !isStreaming && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-blue-950/70 via-indigo-950/60 to-purple-950/70 border border-blue-500/30 p-3.5 shadow-lg backdrop-blur-md">
+      {/* Phase 4: Gating Heuristic Banner / Consensus Badge */}
+      {completedKeys.length >= 2 && !isStreaming && gatingDecision && (
+        <div
+          className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl p-3.5 shadow-lg backdrop-blur-md transition-all ${
+            gatingDecision.isConsensus
+              ? 'bg-gradient-to-r from-emerald-950/60 via-teal-950/50 to-slate-900 border border-emerald-500/30'
+              : gatingDecision.eligible
+              ? 'bg-gradient-to-r from-blue-950/70 via-indigo-950/60 to-purple-950/70 border border-blue-500/30'
+              : 'bg-slate-900/80 border border-slate-800 text-slate-400'
+          }`}
+        >
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30">
-              <GitMerge className="h-4 w-4" />
+            <div
+              className={`flex h-8 w-8 items-center justify-center rounded-xl border ${
+                gatingDecision.isConsensus
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                  : 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+              }`}
+            >
+              {gatingDecision.isConsensus ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <GitMerge className="h-4 w-4" />
+              )}
             </div>
             <div>
-              <h4 className="text-xs font-semibold text-white">Reconcile & Cherry-Pick Answers</h4>
-              <p className="text-[11px] text-slate-300">
-                Pick paragraphs and assertions from competing model responses into a single authoritative merge draft.
-              </p>
+              <h4 className="text-xs font-semibold text-white flex items-center gap-2">
+                {gatingDecision.badgeText || 'Multi-Model Analysis Complete'}
+              </h4>
+              <p className="text-[11px] text-slate-300">{gatingDecision.reason}</p>
             </div>
           </div>
+
+          {/* Launch Workbench Button if eligible or user wants to inspect */}
           <button
             onClick={() => onOpenMerge(completedKeys[0], completedKeys[1])}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/25 transition-all active:scale-[0.98]"
+            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-md transition-all active:scale-[0.98] ${
+              gatingDecision.isConsensus
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-blue-500/25'
+            }`}
           >
             <GitMerge className="h-3.5 w-3.5" />
-            <span>Launch Merge Workbench</span>
+            <span>{gatingDecision.isConsensus ? 'Inspect Diff & Heatmap' : 'Launch Merge Workbench'}</span>
           </button>
         </div>
       )}
@@ -74,7 +123,6 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
           const resp = responses[modelKey];
           const isCurrentStreaming = resp?.status === 'streaming';
           const hasError = resp?.status === 'error';
-          const isDone = resp?.status === 'completed';
 
           return (
             <div

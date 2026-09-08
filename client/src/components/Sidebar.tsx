@@ -1,13 +1,13 @@
-'use client';
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Thread, ProviderStatus } from '@/lib/types';
-import { MessageSquare, Trash2, Plus, Server, Cpu, CheckCircle2, AlertCircle } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X } from 'lucide-react';
 
 interface SidebarProps {
   threads: Thread[];
   activeThreadId: string | null;
   providers: ProviderStatus[];
+  searchQuery: string;
+  onSearchChange: (q: string) => void;
   onSelectThread: (threadId: string) => void;
   onNewThread: () => void;
   onDeleteThread: (threadId: string, e: React.MouseEvent) => void;
@@ -18,6 +18,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   threads,
   activeThreadId,
   providers,
+  searchQuery,
+  onSearchChange,
   onSelectThread,
   onNewThread,
   onDeleteThread,
@@ -34,10 +36,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <span>New Arena Turn</span>
       </button>
 
+      {/* Search Input */}
+      <div className="relative mt-3">
+        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+        <input
+          type="text"
+          placeholder="Search prompts & turns..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full rounded-xl bg-slate-900 border border-slate-800 pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => onSearchChange('')}
+            className="absolute right-2 top-2 p-0.5 text-slate-400 hover:text-white"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </div>
+
       {/* Threads Section */}
-      <div className="mt-4 flex-1 overflow-y-auto pr-1">
+      <div className="mt-3 flex-1 overflow-y-auto pr-1">
         <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Arena History
+          {searchQuery ? 'Search Results' : 'Arena History'}
         </div>
         <div className="mt-1 space-y-1">
           {threads.length === 0 ? (
