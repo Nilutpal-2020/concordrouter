@@ -1,57 +1,95 @@
 # ConcordRouter ⚔️
 
-> **Multi-Model Prompt Arena & Synthesis Platform**  
-> Fan out a single prompt concurrently across multiple LLM providers (Anthropic Claude, OpenAI, Google Gemini, Ollama, OpenRouter), stream outputs side-by-side in real-time, and reconcile divergent responses using interactive cherry-pick merging.
+<div align="center">
+
+![ConcordRouter Banner](https://raw.githubusercontent.com/nilutpal/concordrouter/main/assets/banner.png)
+
+**Multi-Model Prompt Arena, Needleman-Wunsch Semantic Diffing & Consensus Synthesis**
+
+[![CI](https://github.com/nilutpal/concordrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/nilutpal/concordrouter/actions/workflows/ci.yml)
+[![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go)](https://golang.org)
+[![Next.js](https://img.shields.io/badge/Next.js-14_App_Router-black?style=flat&logo=next.js)](https://nextjs.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-amber.svg)](https://opensource.org/licenses/MIT)
+[![Database](https://img.shields.io/badge/SQLite-Pure--Go_WAL-blue.svg)](https://modernc.org/sqlite)
+[![Encryption](https://img.shields.io/badge/Security-AES--256--GCM-emerald.svg)](#-byoa-security--encryption)
+
+[Live Demo](#-quickstart) • [Architecture](#-architecture) • [Features](#-core-capabilities) • [API Docs](#-api-endpoints) • [BYOA Security](#-byoa-security--encryption)
+
+</div>
 
 ---
 
-## ⚡ Core Features
+## 💡 Why ConcordRouter?
 
-- **Concurrent Multi-Model Fan-Out**: Compose a prompt once and dispatch it simultaneously across 2+ foundation models without blocking or head-of-line delay.
-- **Independent Real-Time SSE Streams**: Each response pane streams its own Server-Sent Events channel with dynamic token counters, latency timers, and isolated retry controls.
-- **BYOA (Bring Your Own Account)**: Zero platform markups or token quota limits. Connect your own API keys for Anthropic, OpenAI, Google Gemini, or connect to local Ollama (`localhost:11434`). Keys are encrypted at rest with **AES-256-GCM**.
-- **Interactive Cherry-Pick Merge Workbench (Phase 3)**: Segment responses into structured paragraph, sentence, and code blocks. Click blocks from either model to build an authoritative reconciled draft and seamlessly continue the conversation.
-- **Zero-Dependency Local Architecture**: Runs out of the box with embedded pure-Go SQLite with WAL mode, with optional PostgreSQL + Redis support via `docker-compose`.
+Every foundation model has distinct strengths, biases, and silent hallucinations. Relying on a single LLM vendor locks developers into arbitrary blindspots. 
+
+**ConcordRouter** treats foundation models as competing contributors. It dispatches a single prompt concurrently across leading LLMs, aligns their outputs using global sequence alignment algorithms, and provides interactive cherry-picking and AI synthesis tools to reconcile divergent responses into verified consensus.
+
+---
+
+## ⚡ Core Capabilities
+
+- **Concurrent Fan-Out Concurrency**: Non-blocking Goroutine channels fan out queries simultaneously to **Anthropic Claude 3.7**, **OpenAI GPT-4o / o3-mini**, **Google Gemini 2.5**, **Ollama local models**, and **OpenRouter**.
+- **Independent Real-Time SSE Streams**: Real-time token streaming with live per-pane latency timers, token counters, speed metrics ($T/s$), and single-pane retry controls.
+- **Dynamic Arena Layout Switcher**:
+  - 🔲 **Grid / Split View**: Responsive multi-column comparison (1 to 4 panes).
+  - 👁️ **Focus Mode**: 1 model maximized with a fast tab switcher to flip between model outputs instantly with 0 latency.
+  - 📑 **Stacked View**: Clean horizontal cards for fast sequential skimming.
+- **Reading Typography Controls**: Adjustable font scale (`S` Compact $12\text{px}$, `M` Comfortable $14\text{px}$, `L` Spacious $16\text{px}$) with markdown syntax formatting.
+- **Needleman-Wunsch Semantic Alignment**: Applies bioinformatics global sequence alignment with cosine similarity substitution scores to pair matching prose concepts (unlike line-based Myers code diffs).
+- **Pairwise $M \times N$ Similarity Heatmap**: Hover over matrix cells to inspect cosine similarity scores ($0\text{--}100\%$) and inspect paragraph comparisons.
+- **Hunk-by-Hunk Cherry-Pick Workbench**: 1-click `Accept Left (A)`, `Accept Right (B)`, or `Accept Both (A + B)` per aligned hunk to compose an authoritative merged draft.
+- **AI-Assisted Reconciliation (Phase 6)**: Structured consensus synthesis prompt that de-duplicates prose and highlights consensus assertions with strict attribution.
+- **BYOA (Bring Your Own Account) Vault**: API keys are encrypted at rest with local **AES-256-GCM**. Requests connect directly to official upstream APIs with zero proxy markups or telemetry logging.
+- **Zero-CGo Local-First Persistence**: Powered by `modernc.org/sqlite` in WAL mode for frictionless local execution with zero Docker dependencies.
 
 ---
 
 ## 📐 Architecture
 
 ```
-┌────────────────────────────────────────────────────────┐
-│                   Next.js 14 Frontend                  │
-│  - Prompt Composer & Turn History Sidebar              │
-│  - Responsive Multi-Pane Grid (1–4 columns)            │
-│  - BYOA Credential Management & Test Modal             │
-│  - Interactive Cherry-Pick Merge Workspace             │
-└───────────────────────────┬────────────────────────────┘
-                            │ SSE / REST API
-┌───────────────────────────▼────────────────────────────┐
-│              Go Backend Service (:8080)                │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │ HTTP Router (Chi v5 + SSE Broker)                │  │
-│  │ - /api/v1/threads, /api/v1/threads/{id}/turns    │  │
-│  │ - /api/v1/providers/keys, /api/v1/segment        │  │
-│  └──────────────────────────┬───────────────────────┘  │
-│                             │                          │
-│  ┌──────────────────────────▼───────────────────────┐  │
-│  │ Fan-Out Orchestrator                             │  │
-│  │ - Goroutine Concurrency with Context Isolation   │  │
-│  │ - Multiplexed Chunk Streaming & Resiliency       │  │
-│  └──────────────────────────┬───────────────────────┘  │
-│                             │                          │
-│  ┌──────────────────────────▼───────────────────────┐  │
-│  │ Provider Adapters (internal/providers/*)         │  │
-│  │ - Anthropic, OpenAI, Gemini, Ollama, OpenRouter  │  │
-│  │ - Simulated Mock Arena (for instant offline dev) │  │
-│  └──────────────────────────────────────────────────┘  │
-└───────────────────────────┬────────────────────────────┘
-                            │
-┌───────────────────────────▼────────────────────────────┐
-│                   Storage Layer                        │
-│  - SQLite (WAL Mode, zero-config) / PostgreSQL         │
-│  - AES-256-GCM Encrypted Key Storage                   │
-└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                           Next.js 14 Frontend                            │
+│  - Universal App Navigation (Arena, Features, How It Works, FAQ, About)  │
+│  - Dynamic Arena (Grid, Focus, Stacked modes + Reading scale S/M/L)      │
+│  - Prompt Composer with Templates Library & Active Turn Context Card    │
+│  - 3-Tab Merge Workbench (Semantic Diff, Chunk Picker, AI Synthesis)     │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │ SSE / JSON REST API
+┌────────────────────────────────────▼─────────────────────────────────────┐
+│                       Go Backend Service (:8080)                         │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │ HTTP Router (Chi v5 + SSE Broker)                                  │  │
+│  │ - /api/v1/threads, /api/v1/threads/{id}/turns                      │  │
+│  │ - /api/v1/merge/gate, /api/v1/merge/align, /api/v1/merge/synthesize │  │
+│  │ - /api/v1/providers/keys, /api/v1/threads/search, /threads/export   │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│                                    │                                     │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Concurrency Fan-Out Orchestrator                                   │  │
+│  │ - Goroutine Fan-Out with Isolated Child Contexts                   │  │
+│  │ - Non-blocking Multiplexed SSE Streaming Channels                  │  │
+│  │ - Single-Pane Resilient Error Handling & Retries                   │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│                                    │                                     │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Needleman-Wunsch Alignment & Similarity Engine (internal/merge/)    │  │
+│  │ - Bigram & 3-Gram Shingle Tokenization & Cosine Matrix             │  │
+│  │ - Needleman-Wunsch Global Sequence Alignment (Prose)               │  │
+│  │ - Automated Phase 4 Gating Heuristics & Consensus Badging          │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│                                    │                                     │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Provider Adapters (internal/providers/*)                           │  │
+│  │ - Anthropic, OpenAI, Gemini, Ollama (localhost), OpenRouter, Mock  │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │
+┌────────────────────────────────────▼─────────────────────────────────────┐
+│                            Persistence Layer                             │
+│  - SQLite (WAL Mode, Zero-CGo, Auto-Migrations)                          │
+│  - AES-256-GCM Envelope Encryption for Provider API Credentials          │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -60,85 +98,88 @@
 
 ### Prerequisites
 - **Go 1.22+**
-- **Node.js 18+** & `npm`
+- **Node.js 20+** & `npm`
 - (Optional) **Ollama** running locally on `http://localhost:11434`
 
-### 1. Clone & Setup
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/concordrouter.git
 cd concordrouter
 ```
 
-### 2. Run Locally
+### 2. Launch Local Development Server
 
-Start both the Go backend and Next.js frontend in parallel with one command:
+Run both the Go backend and Next.js frontend concurrently with a single command:
 
 ```bash
 make dev
 ```
 
-- **Frontend UI**: [http://localhost:3000](http://localhost:3000)
+- **Frontend App**: [http://localhost:3000](http://localhost:3000)
 - **Backend API**: [http://localhost:8080](http://localhost:8080)
 
----
-
-## 🔒 BYOA Security Model
-
-ConcordRouter does **not** proxy billing or mark up model tokens.
-1. **At-Rest Encryption**: User-entered API keys are encrypted with **AES-256-GCM** using a derived 256-bit key from `CONCORD_ENCRYPTION_KEY`.
-2. **Masked Previews**: Plaintext keys are never returned back to the browser; only masked previews (e.g. `sk-ant-api...4x9f`) are shown.
-3. **Instant Validation**: Keys are tested against provider validation endpoints before being committed to the database.
+*Note: ConcordRouter includes a built-in **Mock Provider** so you can test fan-out streaming and merges immediately without entering any API keys.*
 
 ---
 
-## 🧪 Testing
+## 🔒 BYOA Security & Encryption
 
-Run backend unit and integration test suites:
+ConcordRouter is built from the ground up for strict credential sovereignty:
+1. **AES-256-GCM Symmetric Encryption**: All API keys are encrypted at rest using Galois/Counter Mode authenticated encryption with unique 96-bit nonces.
+2. **Masked Client Previews**: Plaintext keys are never returned across the wire; only masked previews (e.g., `sk-ant-...4x9f`) are sent to the client.
+3. **Direct Upstream Dispatch**: All API calls dispatch directly from the server to official provider endpoints. No third-party proxy intercepts, logs, or marks up your queries.
+
+---
+
+## 🧪 Testing & Verification
+
+Run the comprehensive test suite and production build:
 
 ```bash
-make test
+# Run all Go tests & Next.js production build
+make test && make build
 ```
 
-Build production binaries and frontend assets:
+```
+✓ Compiled successfully
+Route (app)                              Size     First Load JS
+┌ ○ /                                    28.9 kB         116 kB
+└ ○ /_not-found                          875 B          88.1 kB
 
-```bash
-make build
+ok  	concordrouter/server/internal/api	3.290s
+ok  	concordrouter/server/internal/crypto	4.049s
+ok  	concordrouter/server/internal/merge	1.375s
+ok  	concordrouter/server/internal/orchestrator	2.489s
+ok  	concordrouter/server/internal/providers/anthropic	0.785s
+ok  	concordrouter/server/internal/providers/gemini	2.592s
+ok  	concordrouter/server/internal/providers/ollama	4.594s
+ok  	concordrouter/server/internal/providers/openai	5.254s
+ok  	concordrouter/server/internal/providers/openrouter	5.152s
+ok  	concordrouter/server/internal/store	5.249s
 ```
 
 ---
 
-## 📡 API Reference
+## 📡 API Endpoints
 
-| Endpoint | Method | Description |
+| Method | Endpoint | Description |
 |---|---|---|
-| `/api/v1/health` | `GET` | Health check endpoint |
-| `/api/v1/providers` | `GET` | List all providers, supported models, and connection status |
-| `/api/v1/providers/keys` | `POST` | Validate and store encrypted API key for a provider |
-| `/api/v1/providers/keys/{id}` | `DELETE` | Disconnect/remove a provider key |
-| `/api/v1/threads` | `GET` | List all conversation threads |
-| `/api/v1/threads` | `POST` | Create a new conversation thread |
-| `/api/v1/threads/{id}` | `GET` | Get thread details with turns, model responses, and merges |
-| `/api/v1/threads/{id}/turns` | `POST` | Submit prompt and stream concurrent SSE fan-out |
-| `/api/v1/threads/{id}/retry` | `POST` | Retry streaming a single model pane |
-| `/api/v1/segment` | `POST` | Segment response prose into interactive merge chunks |
-| `/api/v1/threads/{id}/merge` | `POST` | Save a merged reconciled record |
-
----
-
-## 🛣️ Roadmap (Phased Build Plan)
-
-- [x] **Phase 0 — Foundations**: Go backend scaffold, Next.js frontend, SQLite persistence, SSE streaming.
-- [x] **Phase 1 — BYOA Credentials**: AES-256-GCM encryption, live key validation, settings UI.
-- [x] **Phase 2 — Multi-Provider Fan-Out**: Concurrent goroutine dispatch, independent streaming panes, per-pane retries.
-- [x] **Phase 3 — Manual Cherry-Pick Merge**: Prose segmentation (paragraphs, sentences, code blocks, lists), 3-column interactive merge workbench, turn continuation.
-- [x] **Phase 4 — Merge Gating Heuristics**: Length-based skip & cosine similarity duplicate detection.
-- [x] **Phase 5 — Semantic Diff & Alignment**: Sequence alignment (Needleman-Wunsch) with relation classification (agree, paraphrase, conflict) and interactive heatmap matrix.
-- [x] **Phase 6 — AI-Assisted Synthesis Merge**: Reconciled AI synthesis generation with custom merge prompt and trust-level separation.
-- [x] **Phase 7 — Polish & Expansion**: Thread keyword search, Markdown/JSON export, merge version history, and cassette fixture testing across all adapters.
+| `GET` | `/api/v1/providers` | List all providers, connectivity statuses, and available models |
+| `POST` | `/api/v1/providers/keys` | Save & test encrypted provider API key (AES-256-GCM) |
+| `DELETE`| `/api/v1/providers/keys/{id}` | Disconnect provider key |
+| `GET` | `/api/v1/threads` | List all saved arena threads |
+| `POST` | `/api/v1/threads` | Create a new arena thread |
+| `GET` | `/api/v1/threads/search?q={query}` | Search prompts and turns across all threads |
+| `POST` | `/api/v1/threads/{id}/fanout` | **SSE Stream**: Concurrent fan-out to selected models |
+| `POST` | `/api/v1/threads/{id}/turns/{turnId}/retry` | **SSE Stream**: Single-pane isolated retry |
+| `POST` | `/api/v1/merge/gate` | Evaluate Phase 4 gating heuristics (<20 tokens, >90% consensus) |
+| `POST` | `/api/v1/merge/align` | Compute Needleman-Wunsch sequence alignment & similarity matrix |
+| `POST` | `/api/v1/merge/synthesize` | **SSE Stream**: AI consensus reconciliation |
+| `GET` | `/api/v1/threads/{id}/export` | Export session in Markdown or JSON format |
 
 ---
 
 ## 📄 License
 
-MIT License. See [LICENSE](file:///Users/nilutpal/Documents/projects/concordrouter/LICENSE) for details.
+This project is licensed under the [MIT License](LICENSE).
