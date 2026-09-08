@@ -45,7 +45,7 @@ export default function ArenaPage() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [activeThread, setActiveThread] = useState<Thread | null>(null);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
-  const [activeThreadTitle, setActiveThreadTitle] = useState<string>('New Arena Session');
+  const [activeThreadTitle, setActiveThreadTitle] = useState<string>('New Session');
   const [turns, setTurns] = useState<MessageTurn[]>([]);
   const [merges, setMerges] = useState<MergeRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -164,7 +164,7 @@ export default function ArenaPage() {
 
   const handleNewChat = async () => {
     try {
-      const newTh = await createThread('New Arena Session');
+      const newTh = await createThread('New Session');
       setThreads((prev) => [newTh, ...prev]);
       setActiveThread(newTh);
       setActiveThreadId(newTh.id);

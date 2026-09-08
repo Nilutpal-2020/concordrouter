@@ -65,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <button
           onClick={onNewThread}
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background hover:opacity-90 transition-all shadow-sm"
-          title="New Arena Turn"
+          title="New Session"
         >
           <Plus className="h-4 w-4" />
         </button>
@@ -84,14 +84,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <aside className="flex h-full w-60 lg:w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
-      {/* Top Action Bar: New Arena & Collapse */}
+      {/* Top Action Bar: New Session & Collapse */}
       <div className="flex items-center gap-2 mb-2">
         <button
           onClick={onNewThread}
           className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface border border-border hover:border-border-strong hover:bg-surface-hover py-2 px-3 text-xs font-medium text-foreground transition-all shadow-sm active:scale-[0.99]"
         >
           <Plus className="h-3.5 w-3.5 text-foreground" />
-          <span>New Arena</span>
+          <span>New Session</span>
         </button>
         {onToggleCollapse && (
           <button

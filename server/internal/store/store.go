@@ -120,9 +120,16 @@ func (s *SQLiteStore) migrate() error {
 		created_at TIMESTAMP NOT NULL,
 		FOREIGN KEY (thread_id) REFERENCES threads(id) ON DELETE CASCADE
 	);
+	CREATE INDEX IF NOT EXISTS idx_merge_records_thread_id ON merge_records(thread_id);
 	`
-	_, err := s.db.Exec(schema)
-	return err
+	if _, err := s.db.Exec(schema); err != nil {
+		return err
+	}
+
+	// Migrate legacy "New Arena Session" titles to "New Session"
+	_, _ = s.db.Exec(`UPDATE threads SET title = 'New Session' WHERE title = 'New Arena Session'`)
+
+	return nil
 }
 
 func (s *SQLiteStore) SaveProviderKey(providerID string, encryptedKey string, customURL string) error {
@@ -190,7 +197,7 @@ func (s *SQLiteStore) CreateThread(title string) (*domain.Thread, error) {
 	now := time.Now()
 	id := fmt.Sprintf("th_%d", now.UnixNano())
 	if title == "" {
-		title = "New Arena Session"
+		title = "New Session"
 	}
 
 	_, err := s.db.Exec(`INSERT INTO threads (id, title, created_at, updated_at) VALUES (?, ?, ?, ?)`,
@@ -346,7 +353,7 @@ func (s *SQLiteStore) CreateTurn(threadID string, userPrompt string) (*domain.Me
 	// Auto-title thread from first prompt if title is default
 	var currentTitle string
 	_ = s.db.QueryRow(`SELECT title FROM threads WHERE id = ?`, threadID).Scan(&currentTitle)
-	if currentTitle == "New Arena Session" || currentTitle == "" {
+	if currentTitle == "New Session" || currentTitle == "New Arena Session" || currentTitle == "" {
 		newTitle := cleanTitleFromPrompt(userPrompt)
 		_, _ = s.db.Exec(`UPDATE threads SET title = ?, updated_at = ? WHERE id = ?`, newTitle, now, threadID)
 	} else {

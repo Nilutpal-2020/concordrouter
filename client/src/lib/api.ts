@@ -53,7 +53,7 @@ export async function searchThreads(query: string): Promise<Thread[]> {
   return data.threads || [];
 }
 
-export async function createThread(title: string = 'New Arena Session'): Promise<Thread> {
+export async function createThread(title: string = 'New Session'): Promise<Thread> {
   const res = await fetch(`${API_BASE}/threads`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

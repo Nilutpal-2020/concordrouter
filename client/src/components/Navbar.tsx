@@ -164,7 +164,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className="flex items-center gap-1.5 rounded-full bg-foreground text-background px-3.5 py-1.5 text-xs font-medium hover:opacity-90 transition-all active:scale-[0.98]"
           >
             <Plus className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">New Arena</span>
+            <span className="hidden sm:inline">New Session</span>
           </button>
         )}
       </div>
