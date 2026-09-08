@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import { Thread, ProviderStatus } from '@/lib/types';
-import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X, Shield } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 interface SidebarProps {
   threads: Thread[];
@@ -12,6 +14,8 @@ interface SidebarProps {
   onNewThread: () => void;
   onDeleteThread: (threadId: string, e: React.MouseEvent) => void;
   onOpenSettings: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -24,32 +28,75 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNewThread,
   onDeleteThread,
   onOpenSettings,
+  isCollapsed = false,
+  onToggleCollapse,
 }) => {
+  if (isCollapsed) {
+    return (
+      <aside className="flex h-full w-12 flex-col items-center border-r border-border bg-surface-secondary/30 py-3 text-text-secondary select-none">
+        <button
+          onClick={onToggleCollapse}
+          className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
+          title="Expand sidebar"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <button
+          onClick={onNewThread}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background hover:opacity-90 transition-all shadow-sm"
+          title="New Arena Turn"
+        >
+          <Plus className="h-4 w-4" />
+        </button>
+        <div className="mt-auto">
+          <button
+            onClick={onOpenSettings}
+            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
+            title="Configure Providers"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </div>
+      </aside>
+    );
+  }
+
   return (
-    <aside className="flex h-full w-64 flex-col border-r border-white/[0.06] bg-[#0c0f15]/95 p-3 text-slate-300 select-none">
-      {/* New Session Button */}
-      <button
-        onClick={onNewThread}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 py-2.5 px-3 text-xs font-bold text-black shadow-md shadow-amber-500/10 transition-all active:scale-[0.98]"
-      >
-        <Plus className="h-4 w-4 stroke-[2.5]" />
-        <span>New Arena Turn</span>
-      </button>
+    <aside className="flex h-full w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
+      {/* Top Action Bar: New Arena & Collapse */}
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          onClick={onNewThread}
+          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface border border-border hover:border-border-strong hover:bg-surface-hover py-2 px-3 text-xs font-medium text-foreground transition-all shadow-sm active:scale-[0.99]"
+        >
+          <Plus className="h-3.5 w-3.5 text-foreground" />
+          <span>New Arena</span>
+        </button>
+        {onToggleCollapse && (
+          <button
+            onClick={onToggleCollapse}
+            className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-surface-hover text-text-muted hover:text-foreground transition-colors"
+            title="Collapse sidebar"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+        )}
+      </div>
 
       {/* Search Input */}
-      <div className="relative mt-3">
-        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+      <div className="relative mt-1 mb-2">
+        <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
         <input
           type="text"
-          placeholder="Search prompts & turns..."
+          placeholder="Search history..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-xl bg-[#13161f] border border-white/[0.08] pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:border-amber-500/60 focus:outline-none"
+          className="w-full rounded-xl bg-surface border border-border pl-8 pr-7 py-1.5 text-xs text-foreground placeholder-text-muted focus:border-border-strong focus:outline-none transition-colors"
         />
         {searchQuery && (
           <button
             onClick={() => onSearchChange('')}
-            className="absolute right-2 top-2 p-0.5 text-slate-400 hover:text-white"
+            className="absolute right-2 top-2 p-0.5 text-text-muted hover:text-foreground"
           >
             <X className="h-3 w-3" />
           </button>
@@ -57,14 +104,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Threads Section */}
-      <div className="mt-3 flex-1 overflow-y-auto pr-1">
-        <div className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          {searchQuery ? 'Search Results' : 'Arena History'}
+      <div className="flex-1 overflow-y-auto pr-1">
+        <div className="px-2 py-1 text-[11px] font-medium text-text-muted">
+          {searchQuery ? 'Search Results' : 'Recent Turns'}
         </div>
-        <div className="mt-1 space-y-1">
+        <div className="mt-1 space-y-0.5">
           {threads.length === 0 ? (
-            <div className="px-3 py-6 text-center text-xs text-slate-400">
-              No turns yet. Compose a prompt to fan-out.
+            <div className="px-3 py-6 text-center text-xs text-text-muted">
+              No conversations yet. Fan-out a prompt to start.
             </div>
           ) : (
             threads.map((th) => {
@@ -73,19 +120,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div
                   key={th.id}
                   onClick={() => onSelectThread(th.id)}
-                  className={`group flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium cursor-pointer transition-all ${
+                  className={`group flex items-center justify-between rounded-lg px-2.5 py-2 text-xs font-normal cursor-pointer transition-all ${
                     isActive
-                      ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:bg-[#141822] hover:text-slate-200'
+                      ? 'bg-surface text-foreground font-medium shadow-sm border border-border'
+                      : 'text-text-secondary hover:bg-surface-hover hover:text-foreground'
                   }`}
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-amber-400' : 'text-slate-400'}`} />
+                    <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-foreground' : 'text-text-muted'}`} />
                     <span className="truncate">{th.title}</span>
                   </div>
                   <button
                     onClick={(e) => onDeleteThread(th.id, e)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-400 p-1 transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 p-1 transition-opacity"
                     title="Delete thread"
                   >
                     <Trash2 className="h-3 w-3" />
@@ -98,15 +145,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Provider Status Summary Bar */}
-      <div className="mt-auto border-t border-white/[0.06] pt-3">
+      <div className="mt-auto border-t border-border pt-3">
         <div className="flex items-center justify-between px-1 mb-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <Server className="h-3 w-3 text-slate-400" />
+          <span className="text-[11px] font-medium text-text-muted flex items-center gap-1.5">
+            <Server className="h-3 w-3" />
             Providers
           </span>
           <button
             onClick={onOpenSettings}
-            className="text-[10px] text-amber-400 hover:text-amber-300 font-semibold hover:underline"
+            className="text-[10px] text-text-secondary hover:text-foreground font-medium transition-colors"
           >
             Configure
           </button>
@@ -117,13 +164,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div
               key={p.id}
               onClick={onOpenSettings}
-              className="flex items-center justify-between rounded-lg bg-[#13161f] hover:bg-[#191d29] px-2 py-1.5 text-[11px] text-slate-300 cursor-pointer border border-white/[0.06] transition-colors"
+              className="flex items-center justify-between rounded-lg bg-surface hover:bg-surface-hover px-2 py-1.5 text-[11px] text-text-secondary cursor-pointer border border-border transition-colors"
             >
               <span className="truncate capitalize font-mono text-[10px]">{p.id}</span>
               {p.isConnected ? (
-                <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
               ) : (
-                <AlertCircle className="h-3 w-3 text-slate-400 shrink-0" />
+                <span className="h-1.5 w-1.5 rounded-full bg-text-muted/40 shrink-0" />
               )}
             </div>
           ))}

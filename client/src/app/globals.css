@@ -2,21 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Light mode tokens: Claude warm stone & linen aesthetic */
 :root {
-  --background: #090b0e;
-  --foreground: #f1f5f9;
-  --card: #11141b;
-  --card-hover: #171b24;
-  --card-active: #1d222e;
-  --border: rgba(255, 255, 255, 0.09);
+  --background: #faf9f5;
+  --foreground: #1f1e1d;
+  --surface: #ffffff;
+  --surface-secondary: #f4f3ee;
+  --surface-hover: #eae8e1;
+  --surface-active: #e2ded5;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-subtle: rgba(0, 0, 0, 0.05);
+  --border-strong: rgba(0, 0, 0, 0.18);
+  --card: #ffffff;
+  --text-primary: #1f1e1d;
+  --text-secondary: #666562;
+  --text-muted: #93918b;
+  --accent: #cc785c;
+  --accent-foreground: #ffffff;
+  --accent-terracotta: #cc785c;
+  --accent-emerald: #10a37f;
+  --accent-amber: #d97706;
+  --accent-blue: #2563eb;
+}
+
+/* Dark mode tokens: ChatGPT neutral graphite/zinc aesthetic */
+.dark {
+  --background: #171717;
+  --foreground: #ececec;
+  --surface: #212121;
+  --surface-secondary: #282828;
+  --surface-hover: #2f2f2f;
+  --surface-active: #383838;
+  --border: rgba(255, 255, 255, 0.1);
   --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-focus: rgba(245, 158, 11, 0.5);
+  --border-strong: rgba(255, 255, 255, 0.2);
+  --card: #212121;
+  --text-primary: #ececec;
+  --text-secondary: #b4b4b4;
+  --text-muted: #737373;
+  --accent: #d97757;
+  --accent-foreground: #ffffff;
+  --accent-terracotta: #d97757;
+  --accent-emerald: #10a37f;
   --accent-amber: #f59e0b;
-  --accent-gold: #d97706;
-  --accent-sage: #10b981;
-  --accent-rose: #f43f5e;
-  --accent-violet: #8b5cf6;
-  --accent-sky: #0ea5e9;
+  --accent-blue: #3b82f6;
 }
 
 body {
@@ -24,92 +53,47 @@ body {
   color: var(--foreground);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   overflow-x: hidden;
-  background-image: 
-    radial-gradient(at 10% 10%, rgba(245, 158, 11, 0.04) 0px, transparent 45%),
-    radial-gradient(at 90% 15%, rgba(14, 165, 233, 0.03) 0px, transparent 45%),
-    radial-gradient(at 50% 90%, rgba(16, 185, 129, 0.03) 0px, transparent 50%);
-  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom Scrollbar */
+/* Slim modern scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(10, 12, 16, 0.6);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(71, 85, 105, 0.4);
+  background: rgba(140, 140, 140, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245, 158, 11, 0.6);
+  background: rgba(140, 140, 140, 0.45);
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  background: rgba(14, 17, 23, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.glass-card {
-  background: rgba(17, 20, 27, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
-  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.glass-card:hover {
-  border-color: rgba(245, 158, 11, 0.35);
-  transform: translateY(-2px);
-  box-shadow: 0 16px 36px -12px rgba(245, 158, 11, 0.12);
-}
-
+/* Header & Glass Utilities */
 .glass-header {
-  background: rgba(10, 13, 18, 0.88);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-/* Glowing Border Elements */
-.glow-amber {
-  box-shadow: 0 0 25px -4px rgba(245, 158, 11, 0.25);
+/* Modern AI Agent Card */
+.agent-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+.agent-card:hover {
+  border-color: var(--border-strong);
 }
 
-.glow-emerald {
-  box-shadow: 0 0 25px -4px rgba(16, 185, 129, 0.25);
-}
-
-.glow-violet {
-  box-shadow: 0 0 25px -4px rgba(139, 92, 246, 0.25);
-}
-
-/* Gradient Text */
-.text-gradient {
-  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-gradient-gold {
-  background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 50%, #d97706 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-.text-gradient-vibrant {
-  background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 35%, #f97316 70%, #ec4899 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Streaming Cursor Animation */
+/* Streaming Blinking Cursor */
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
@@ -117,77 +101,103 @@ body {
 
 .streaming-cursor {
   display: inline-block;
-  width: 7px;
-  height: 15px;
-  background: linear-gradient(to bottom, #f59e0b, #fbbf24);
-  margin-left: 3px;
-  vertical-align: middle;
-  border-radius: 1px;
-  animation: blink 0.8s infinite;
+  width: 8px;
+  height: 16px;
+  background-color: currentColor;
+  margin-left: 4px;
+  vertical-align: -2px;
+  border-radius: 2px;
+  animation: blink 0.9s infinite;
 }
 
-/* Shimmer Animation */
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.animate-shimmer {
-  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(245,158,11,0.08) 50%, rgba(255,255,255,0) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 2.5s infinite;
-}
-
-/* Markdown prose readability */
+/* Markdown Prose Readability (ChatGPT & Claude Style) */
 .arena-prose {
-  color: #e2e8f0;
+  color: var(--foreground);
   line-height: 1.65;
+  font-size: 0.9375rem;
 }
 .arena-prose p {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
 }
 .arena-prose p:last-child {
   margin-bottom: 0;
 }
 .arena-prose h1, .arena-prose h2, .arena-prose h3, .arena-prose h4 {
-  color: #ffffff;
+  color: var(--foreground);
   font-weight: 600;
-  margin-top: 1rem;
+  margin-top: 1.25rem;
   margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
 }
+.arena-prose h1 { font-size: 1.25rem; }
+.arena-prose h2 { font-size: 1.125rem; }
+.arena-prose h3 { font-size: 1rem; }
+
 .arena-prose ul, .arena-prose ol {
   margin-left: 1.25rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+.arena-prose ul {
+  list-style-type: disc;
+}
+.arena-prose ol {
+  list-style-type: decimal;
 }
 .arena-prose li {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
+}
+.arena-prose strong {
+  font-weight: 600;
+  color: var(--foreground);
 }
 .arena-prose code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  background-color: rgba(255, 255, 255, 0.08);
-  padding: 0.15rem 0.35rem;
-  border-radius: 0.3rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border-subtle);
+  padding: 0.15rem 0.375rem;
+  border-radius: 0.375rem;
   font-size: 0.85em;
-  color: #fbbf24;
 }
 .arena-prose pre {
-  background-color: #0c0f14;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.5rem;
-  padding: 0.85rem;
+  background-color: var(--surface-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.625rem;
+  padding: 0.875rem 1rem;
   overflow-x: auto;
-  margin: 0.75rem 0;
+  margin: 0.85rem 0;
 }
 .arena-prose pre code {
   background-color: transparent;
+  border: none;
   padding: 0;
-  color: #e2e8f0;
   font-size: 0.85em;
+  color: inherit;
 }
 .arena-prose blockquote {
-  border-left: 3px solid #f59e0b;
-  padding-left: 0.85rem;
-  color: #94a3b8;
+  border-left: 3px solid var(--accent-terracotta);
+  padding-left: 0.875rem;
+  color: var(--text-secondary);
   font-style: italic;
-  margin: 0.75rem 0;
+  margin: 0.85rem 0;
+}
+.arena-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.85rem 0;
+  font-size: 0.875rem;
+}
+.arena-prose th, .arena-prose td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+.arena-prose th {
+  background-color: var(--surface-secondary);
+  font-weight: 600;
+}
+
+/* Smooth Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--accent-terracotta);
+  outline-offset: 1px;
 }

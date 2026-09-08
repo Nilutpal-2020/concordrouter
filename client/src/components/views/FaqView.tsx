@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp, Sparkles, Layers, ShieldCheck, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 interface FaqItem {
   question: string;
@@ -42,13 +42,13 @@ export const FaqView: React.FC = () => {
       category: 'Merge Mechanics',
       question: 'What is the difference between Deterministic Diff and AI Synthesis?',
       answer:
-        'A Deterministic Diff (Phases 3 & 5) cherry-picks exact paragraphs and assertions written by the source models. An AI Synthesis (Phase 6) sends both answers to an LLM with explicit consensus instructions to draft a newly de-duplicated summary. AI syntheses are explicitly badged to maintain trust boundaries.',
+        'A Deterministic Diff cherry-picks exact paragraphs and assertions written by the source models. An AI Synthesis sends both answers to an LLM with explicit consensus instructions to draft a newly de-duplicated summary. AI syntheses are explicitly badged to maintain trust boundaries.',
     },
     {
       category: 'Merge Mechanics',
       question: 'When is the Merge Workbench offered?',
       answer:
-        'Phase 4 Gating Heuristics automatically evaluate response length and cosine similarity. Trivial turns (e.g. "Hi", "Thanks") skip the merge affordance. Near-identical answers (>90% agreement) receive a "✨ Models in Consensus" badge, while divergent turns offer 1-click merge launch.',
+        'Phase 4 Gating Heuristics automatically evaluate response length and cosine similarity. Trivial turns (e.g. "Hi", "Thanks") skip the merge affordance. Near-identical answers (>90% agreement) receive a "Models in Consensus" badge, while divergent turns offer 1-click merge launch.',
     },
     {
       category: 'Self-Hosting',
@@ -60,74 +60,71 @@ export const FaqView: React.FC = () => {
 
   const categories = ['all', 'General', 'Providers & Keys', 'Merge Mechanics', 'Self-Hosting'];
 
-  const filteredFaqs =
-    activeCategory === 'all'
-      ? faqs
-      : faqs.filter((item) => item.category.toLowerCase() === activeCategory.toLowerCase());
+  const filteredFaqs = faqs.filter(
+    (item) => activeCategory === 'all' || item.category === activeCategory
+  );
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 bg-[#090b0e]">
-      <div className="mx-auto max-w-4xl space-y-10">
+    <div className="flex-1 overflow-y-auto px-4 py-8 lg:px-12 bg-background text-foreground transition-colors">
+      <div className="mx-auto max-w-3xl space-y-8">
         {/* Header Hero */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[#141822] px-3.5 py-1 text-xs font-mono text-amber-400 border border-amber-500/20">
-            <HelpCircle className="h-3.5 w-3.5" />
-            <span>Knowledge Base & FAQ</span>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-surface-secondary px-3 py-1 text-xs font-medium text-text-secondary border border-border">
+            <Sparkles className="h-3.5 w-3.5 text-brand-terracotta" />
+            <span>Questions & Guidance</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">
             Frequently Asked Questions
           </h1>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Everything you need to know about concurrent fan-out, sequence alignment diffing, BYOA encryption, and local self-hosting.
+          <p className="text-xs sm:text-sm text-text-secondary leading-relaxed">
+            Everything you need to know about multi-model fan-out, sequence alignment, and BYOA keys.
           </p>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {categories.map((cat) => (
+        {/* Category Pills */}
+        <div className="flex flex-wrap items-center justify-center gap-1.5 pb-2">
+          {categories.map((c) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`rounded-xl px-4 py-2 text-xs font-medium capitalize transition-all ${
-                activeCategory === cat
-                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold shadow-md shadow-amber-500/10'
-                  : 'bg-[#11141b] text-slate-400 hover:text-white border border-white/[0.08] hover:border-amber-500/30'
+              key={c}
+              onClick={() => setActiveCategory(c)}
+              className={`rounded-full px-3 py-1 text-xs transition-all ${
+                activeCategory === c
+                  ? 'bg-foreground text-background font-medium shadow-sm'
+                  : 'text-text-secondary hover:text-foreground hover:bg-surface-secondary'
               }`}
             >
-              {cat}
+              {c === 'all' ? 'All Questions' : c}
             </button>
           ))}
         </div>
 
-        {/* Accordion List */}
-        <div className="space-y-3">
-          {filteredFaqs.map((faq, idx) => {
+        {/* FAQ Accordion */}
+        <div className="space-y-2.5">
+          {filteredFaqs.map((item, idx) => {
             const isOpen = openIndex === idx;
             return (
               <div
                 key={idx}
-                className="rounded-2xl bg-[#11141b] border border-white/[0.08] overflow-hidden transition-all hover:border-amber-500/30"
+                className="rounded-2xl bg-surface border border-border transition-all shadow-card overflow-hidden"
               >
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : idx)}
-                  className="flex w-full items-center justify-between p-5 text-left transition-colors"
+                  className="flex w-full items-center justify-between p-4 text-left text-xs sm:text-sm font-medium text-foreground hover:text-foreground/80 transition-colors"
                 >
-                  <span className="font-semibold text-white text-sm sm:text-base pr-4">
-                    {faq.question}
-                  </span>
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-black/40 border border-white/[0.08] text-amber-400">
-                    {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </div>
+                  <span className="pr-4">{item.question}</span>
+                  {isOpen ? (
+                    <ChevronUp className="h-4 w-4 text-text-muted shrink-0" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-muted shrink-0" />
+                  )}
                 </button>
 
                 {isOpen && (
-                  <div className="px-5 pb-5 pt-1 text-xs sm:text-[13px] text-slate-300 leading-relaxed border-t border-white/[0.06]">
-                    <p>{faq.answer}</p>
-                    <div className="mt-3 flex items-center gap-2">
-                      <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] font-mono text-amber-400 border border-amber-500/20">
-                        Category: {faq.category}
-                      </span>
-                    </div>
+                  <div className="border-t border-border/50 p-4 pt-3 text-xs sm:text-sm leading-relaxed text-text-secondary bg-surface-secondary/20">
+                    <p>{item.answer}</p>
+                    <span className="mt-3 inline-block rounded-full bg-surface-secondary px-2 py-0.2 text-[9px] font-mono text-text-muted border border-border">
+                      {item.category}
+                    </span>
                   </div>
                 )}
               </div>

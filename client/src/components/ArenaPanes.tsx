@@ -18,13 +18,11 @@ import {
   Columns,
   LayoutList,
   Eye,
-  Type,
-  Zap,
-  Flame,
   ArrowRight,
   Code2,
   Scale,
   FileCode2,
+  Zap,
 } from 'lucide-react';
 
 interface ArenaPanesProps {
@@ -94,50 +92,50 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Provider-specific accent styling
+  // Provider-specific accent styling (Claude terracotta, ChatGPT emerald, Gemini blue)
   const getProviderTheme = (providerId: string) => {
     switch (providerId.toLowerCase()) {
       case 'anthropic':
         return {
-          badgeBg: 'bg-amber-500/10 text-amber-300 border-amber-500/30',
-          borderAccent: 'hover:border-amber-500/40 focus-within:border-amber-500/50',
-          glow: 'from-amber-500/10 to-transparent',
-          dot: 'bg-amber-400',
+          dotBg: 'bg-[#cc785c]',
+          badgeBg: 'bg-[#cc785c]/10 text-[#cc785c] border-[#cc785c]/30',
+          avatarText: 'text-[#cc785c]',
+          borderAccent: 'focus-within:border-[#cc785c]/50',
         };
       case 'openai':
         return {
-          badgeBg: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30',
-          borderAccent: 'hover:border-emerald-500/40 focus-within:border-emerald-500/50',
-          glow: 'from-emerald-500/10 to-transparent',
-          dot: 'bg-emerald-400',
+          dotBg: 'bg-[#10a37f]',
+          badgeBg: 'bg-[#10a37f]/10 text-[#10a37f] border-[#10a37f]/30',
+          avatarText: 'text-[#10a37f]',
+          borderAccent: 'focus-within:border-[#10a37f]/50',
         };
       case 'gemini':
         return {
-          badgeBg: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30',
-          borderAccent: 'hover:border-indigo-500/40 focus-within:border-indigo-500/50',
-          glow: 'from-indigo-500/10 to-transparent',
-          dot: 'bg-indigo-400',
+          dotBg: 'bg-[#3b82f6]',
+          badgeBg: 'bg-[#3b82f6]/10 text-[#3b82f6] border-[#3b82f6]/30',
+          avatarText: 'text-[#3b82f6]',
+          borderAccent: 'focus-within:border-[#3b82f6]/50',
         };
       case 'ollama':
         return {
-          badgeBg: 'bg-orange-500/10 text-orange-300 border-orange-500/30',
-          borderAccent: 'hover:border-orange-500/40 focus-within:border-orange-500/50',
-          glow: 'from-orange-500/10 to-transparent',
-          dot: 'bg-orange-400',
+          dotBg: 'bg-[#f59e0b]',
+          badgeBg: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30',
+          avatarText: 'text-[#f59e0b]',
+          borderAccent: 'focus-within:border-[#f59e0b]/50',
         };
       case 'openrouter':
         return {
-          badgeBg: 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30',
-          borderAccent: 'hover:border-cyan-500/40 focus-within:border-cyan-500/50',
-          glow: 'from-cyan-500/10 to-transparent',
-          dot: 'bg-cyan-400',
+          dotBg: 'bg-[#06b6d4]',
+          badgeBg: 'bg-[#06b6d4]/10 text-[#06b6d4] border-[#06b6d4]/30',
+          avatarText: 'text-[#06b6d4]',
+          borderAccent: 'focus-within:border-[#06b6d4]/50',
         };
       default:
         return {
-          badgeBg: 'bg-slate-700/30 text-slate-300 border-slate-600/40',
-          borderAccent: 'hover:border-amber-500/30 focus-within:border-amber-500/40',
-          glow: 'from-slate-500/10 to-transparent',
-          dot: 'bg-slate-400',
+          dotBg: 'bg-text-secondary',
+          badgeBg: 'bg-surface-secondary text-text-secondary border-border',
+          avatarText: 'text-text-secondary',
+          borderAccent: 'focus-within:border-border-strong',
         };
     }
   };
@@ -154,7 +152,8 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
     }
   };
 
-  const hasAnyResponses = Object.keys(responses).length > 0 && 
+  const hasAnyResponses =
+    Object.keys(responses).length > 0 &&
     Object.values(responses).some((r) => r.content || r.status === 'streaming');
 
   const starterTemplates = [
@@ -162,39 +161,41 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
       title: 'Distributed Cache Architecture',
       desc: 'Compare Redis vs Memcached vs Local cache strategies with failover guarantees.',
       icon: Code2,
-      prompt: 'Compare distributed cache architecture tradeoffs between Redis Cluster, Memcached, and in-memory caches. Provide a structured comparison covering consistency, throughput, and failover mechanics.',
+      prompt:
+        'Compare distributed cache architecture tradeoffs between Redis Cluster, Memcached, and in-memory caches. Provide a structured comparison covering consistency, throughput, and failover mechanics.',
     },
     {
       title: 'Security Vulnerability Audit',
       desc: 'Audit a JWT authentication handler for token substitution & replay risks.',
       icon: Scale,
-      prompt: 'Audit standard JWT authentication in microservices for common security flaws like token substitution, weak algorithms (none), replay attacks, and key rotation strategies. Suggest hardening practices.',
+      prompt:
+        'Audit standard JWT authentication in microservices for common security flaws like token substitution, weak algorithms (none), replay attacks, and key rotation strategies. Suggest hardening practices.',
     },
     {
       title: 'React Concurrent vs SolidJS Reactivity',
       desc: 'Deep technical comparison of VDOM fiber reconciliation vs fine-grained signals.',
       icon: FileCode2,
-      prompt: 'Compare React 19 concurrent fiber reconciliation with SolidJS fine-grained signal reactivity. Contrast memory overhead, compiler reliance, and re-rendering performance in detail.',
+      prompt:
+        'Compare React 19 concurrent fiber reconciliation with SolidJS fine-grained signal reactivity. Contrast memory overhead, compiler reliance, and re-rendering performance in detail.',
     },
   ];
 
   return (
-    <div className="flex flex-col h-full space-y-3.5">
+    <div className="flex flex-col h-full space-y-3">
       {/* Top Arena Control & Mode Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl bg-[#11141b]/90 border border-white/[0.08] px-4 py-2.5 backdrop-blur-md">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-surface border border-border px-4 py-2 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-200">
-            <Zap className="h-4 w-4 text-amber-400" />
-            <span>Arena Workspace</span>
-            <span className="rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 text-[10px] font-mono">
-              {selectedModels.length} {selectedModels.length === 1 ? 'Model' : 'Models'} Active
+          <div className="flex items-center gap-2 text-xs font-medium text-foreground">
+            <span className="font-semibold">Arena</span>
+            <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.5 text-[10px] font-mono">
+              {selectedModels.length} {selectedModels.length === 1 ? 'Model' : 'Models'}
             </span>
           </div>
 
           {isStreaming && (
-            <span className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400 animate-pulse bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
-              <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping" />
-              Streaming Fan-out...
+            <span className="flex items-center gap-1.5 text-[11px] font-mono text-foreground animate-pulse bg-surface-secondary border border-border px-2.5 py-0.5 rounded-full">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#10a37f] animate-ping" />
+              Streaming answers...
             </span>
           )}
         </div>
@@ -202,13 +203,13 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
         {/* View Controls: Layout Switcher & Text Size */}
         <div className="flex items-center gap-2">
           {/* Layout Selector */}
-          <div className="flex items-center rounded-xl bg-black/40 border border-white/[0.06] p-0.5 text-xs">
+          <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border">
             <button
               onClick={() => setLayoutMode('grid')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
                 layoutMode === 'grid'
-                  ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
               title="Side-by-Side Grid Layout"
             >
@@ -223,10 +224,10 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                   setFocusedModelKey(`${selectedModels[0].providerId}:${selectedModels[0].model}`);
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
                 layoutMode === 'focus'
-                  ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
               title="Focus Single Model Layout"
             >
@@ -236,10 +237,10 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
 
             <button
               onClick={() => setLayoutMode('stacked')}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 transition-all ${
+              className={`flex items-center gap-1 rounded-md px-2 py-1 transition-all ${
                 layoutMode === 'stacked'
-                  ? 'bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground font-medium shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
               title="Stacked Comparison Layout"
             >
@@ -249,11 +250,11 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
           </div>
 
           {/* Typography Scale Toggle */}
-          <div className="flex items-center rounded-xl bg-black/40 border border-white/[0.06] p-0.5 text-xs">
+          <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border">
             <button
               onClick={() => setTextSize('compact')}
-              className={`rounded-lg px-2 py-1 text-[11px] font-mono transition-all ${
-                textSize === 'compact' ? 'bg-white/10 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+                textSize === 'compact' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
               title="Compact Font Size (12px)"
             >
@@ -261,8 +262,8 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
             </button>
             <button
               onClick={() => setTextSize('comfortable')}
-              className={`rounded-lg px-2 py-1 text-[11px] font-mono transition-all ${
-                textSize === 'comfortable' ? 'bg-white/10 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+                textSize === 'comfortable' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
               title="Comfortable Font Size (14px)"
             >
@@ -270,8 +271,8 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
             </button>
             <button
               onClick={() => setTextSize('spacious')}
-              className={`rounded-lg px-2 py-1 text-[11px] font-mono transition-all ${
-                textSize === 'spacious' ? 'bg-white/10 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+              className={`rounded-md px-2 py-1 text-[11px] font-mono transition-all ${
+                textSize === 'spacious' ? 'bg-surface text-foreground font-bold shadow-sm' : 'text-text-muted hover:text-foreground'
               }`}
               title="Spacious Font Size (16px)"
             >
@@ -281,62 +282,44 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
         </div>
       </div>
 
-      {/* Phase 4: Gating Heuristic Banner / Consensus Badge */}
+      {/* Consensus / Gating Decision Banner */}
       {completedKeys.length >= 2 && !isStreaming && gatingDecision && (
-        <div
-          className={`flex flex-wrap items-center justify-between gap-3 rounded-2xl p-3.5 shadow-lg backdrop-blur-md transition-all ${
-            gatingDecision.isConsensus
-              ? 'bg-gradient-to-r from-emerald-950/60 via-[#111915] to-[#0c0f14] border border-emerald-500/30'
-              : gatingDecision.eligible
-              ? 'bg-gradient-to-r from-amber-950/50 via-[#1a140b] to-[#0c0f14] border border-amber-500/30'
-              : 'bg-[#11141b] border border-white/[0.08] text-slate-300'
-          }`}
-        >
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-surface border border-border p-3.5 shadow-sm transition-all">
           <div className="flex items-center gap-3">
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-xl border ${
-                gatingDecision.isConsensus
-                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                  : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-              }`}
-            >
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-secondary border border-border shrink-0">
               {gatingDecision.isConsensus ? (
-                <CheckCircle2 className="h-4 w-4" />
+                <CheckCircle2 className="h-4 w-4 text-[#10a37f]" />
               ) : (
-                <GitMerge className="h-4 w-4" />
+                <GitMerge className="h-4 w-4 text-[#cc785c]" />
               )}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h4 className="text-xs font-semibold text-white">
+                <h4 className="text-xs font-semibold text-foreground">
                   {gatingDecision.badgeText || 'Multi-Model Analysis Complete'}
                 </h4>
                 {gatingDecision.similarityScore !== undefined && (
-                  <span className="rounded bg-black/40 px-1.5 py-0.2 text-[10px] font-mono text-amber-300 border border-white/[0.06]">
-                    {(gatingDecision.similarityScore * 100).toFixed(0)}% Similarity
+                  <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-mono text-text-secondary border border-border">
+                    {(gatingDecision.similarityScore * 100).toFixed(0)}% Match
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-slate-300 mt-0.5">{gatingDecision.reason}</p>
+              <p className="text-[11px] text-text-secondary mt-0.5">{gatingDecision.reason}</p>
             </div>
           </div>
 
           {/* Launch Workbench Button */}
           <button
             onClick={() => onOpenMerge(completedKeys[0], completedKeys[1])}
-            className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold text-white shadow-md transition-all active:scale-[0.98] ${
-              gatingDecision.isConsensus
-                ? 'bg-[#1a1e27] hover:bg-[#232834] text-slate-200 border border-slate-700'
-                : 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-black font-bold shadow-amber-500/20'
-            }`}
+            className="flex items-center gap-2 rounded-full bg-foreground text-background px-4 py-2 text-xs font-medium hover:opacity-90 transition-all active:scale-[0.98] shadow-sm"
           >
             <GitMerge className="h-3.5 w-3.5" />
-            <span>{gatingDecision.isConsensus ? 'Inspect Semantic Diff' : 'Launch Merge Workbench'}</span>
+            <span>{gatingDecision.isConsensus ? 'Inspect Diff' : 'Launch Merge Workbench'}</span>
           </button>
         </div>
       )}
 
-      {/* Focus Mode Tab Bar (If Focus Mode is selected) */}
+      {/* Focus Mode Tab Bar */}
       {layoutMode === 'focus' && (
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {selectedModels.map((target) => {
@@ -349,17 +332,17 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
               <button
                 key={modelKey}
                 onClick={() => setFocusedModelKey(modelKey)}
-                className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-medium transition-all shrink-0 ${
+                className={`flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-medium transition-all shrink-0 ${
                   isSelected
-                    ? 'bg-[#181d27] border border-amber-500/40 text-white shadow-lg shadow-black/40'
-                    : 'bg-[#11141b]/80 border border-white/[0.06] text-slate-400 hover:text-slate-200 hover:bg-[#141822]'
+                    ? 'bg-surface border border-border-strong text-foreground shadow-sm'
+                    : 'bg-surface-secondary/60 border border-border text-text-secondary hover:text-foreground'
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${theme.dot}`} />
-                <span className="font-semibold">{target.model}</span>
-                <span className="text-[10px] uppercase font-mono text-slate-400">({target.providerId})</span>
+                <span className={`h-2 w-2 rounded-full ${theme.dotBg}`} />
+                <span>{target.model}</span>
+                <span className="text-[10px] text-text-muted">({target.providerId})</span>
                 {resp?.tokens ? (
-                  <span className="rounded bg-black/40 px-1 py-0.2 text-[9px] font-mono text-slate-300">
+                  <span className="rounded bg-surface-secondary px-1 py-0.2 text-[9px] font-mono text-text-secondary">
                     {resp.tokens}t
                   </span>
                 ) : null}
@@ -369,44 +352,46 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
         </div>
       )}
 
-      {/* Empty State / Launchpad when no prompt has run */}
+      {/* Empty State / Prompt Launchpad */}
       {!hasAnyResponses && !isStreaming && (
-        <div className="flex-1 flex flex-col items-center justify-center rounded-3xl bg-[#11141b]/60 border border-white/[0.06] p-8 text-center backdrop-blur-md">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500/20 to-amber-600/5 border border-amber-500/30 text-amber-400 mb-4 shadow-xl shadow-amber-500/5">
-            <Sparkles className="h-7 w-7 text-amber-400" />
+        <div className="flex-1 flex flex-col items-center justify-center rounded-2xl bg-surface border border-border p-8 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-secondary border border-border mb-3 text-text-primary">
+            <Sparkles className="h-5 w-5" />
           </div>
 
-          <h3 className="text-lg font-bold text-white mb-1.5">
-            Multi-Model Consensus & Difference Arena
+          <h3 className="text-base font-semibold text-foreground mb-1">
+            Prompt Consensus & Differentiation Arena
           </h3>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-lg mb-6">
-            Dispatch queries simultaneously to selected LLMs, compare divergent answers with Needleman-Wunsch diffing, and synthesize verified consensus.
+          <p className="text-xs sm:text-sm text-text-secondary max-w-lg mb-6 leading-relaxed">
+            Fan out queries simultaneously across OpenAI, Anthropic, Gemini, or Ollama, compare outputs, and synthesize verified consensus.
           </p>
 
-          <div className="w-full max-w-3xl">
-            <div className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3 px-1">
-              Quick Start Prompt Experiments:
+          <div className="w-full max-w-2xl">
+            <div className="text-left text-xs font-medium text-text-muted mb-2.5 px-1">
+              Example prompts to compare:
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
               {starterTemplates.map((t, idx) => {
                 const Icon = t.icon;
                 return (
                   <div
                     key={idx}
                     onClick={() => onSelectPromptTemplate && onSelectPromptTemplate(t.prompt)}
-                    className="group flex flex-col justify-between text-left p-4 rounded-2xl bg-[#151922]/80 hover:bg-[#1a202c] border border-white/[0.06] hover:border-amber-500/30 cursor-pointer transition-all shadow-md hover:shadow-xl hover:shadow-amber-500/5 hover:-translate-y-0.5"
+                    className="group flex flex-col justify-between text-left p-3.5 rounded-xl bg-surface-secondary/50 hover:bg-surface-secondary border border-border hover:border-border-strong cursor-pointer transition-all"
                   >
                     <div>
-                      <div className="flex items-center gap-2 mb-2 text-amber-400">
-                        <Icon className="h-4 w-4" />
-                        <span className="font-semibold text-white text-xs">{t.title}</span>
+                      <div className="flex items-center gap-1.5 mb-1.5 text-foreground">
+                        <Icon className="h-3.5 w-3.5 text-text-secondary group-hover:text-foreground" />
+                        <span className="font-medium text-xs truncate">{t.title}</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">{t.desc}</p>
+                      <p className="text-[11px] text-text-secondary line-clamp-2 leading-relaxed">
+                        {t.desc}
+                      </p>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-[10px] text-amber-400 font-semibold group-hover:translate-x-0.5 transition-transform">
-                      <span>Launch Prompt</span>
-                      <ArrowRight className="h-3 w-3" />
+                    <div className="mt-3 flex items-center justify-between text-[10px] text-text-secondary group-hover:text-foreground font-medium">
+                      <span>Try Prompt</span>
+                      <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 );
@@ -424,12 +409,12 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
               ? selectedModels.length === 1
                 ? 'grid grid-cols-1'
                 : selectedModels.length === 2
-                ? 'grid grid-cols-1 md:grid-cols-2 gap-3.5'
+                ? 'grid grid-cols-1 md:grid-cols-2 gap-3'
                 : selectedModels.length === 3
-                ? 'grid grid-cols-1 md:grid-cols-3 gap-3.5'
-                : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3.5'
+                ? 'grid grid-cols-1 md:grid-cols-3 gap-3'
+                : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3'
               : layoutMode === 'stacked'
-              ? 'flex flex-col space-y-3.5'
+              ? 'flex flex-col space-y-3'
               : 'flex flex-col'
           }`}
         >
@@ -445,7 +430,6 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
               const hasError = resp?.status === 'error';
               const theme = getProviderTheme(target.providerId);
 
-              // Calculate tokens per second if latency is available
               const tokensPerSec =
                 resp?.latencyMs && resp.latencyMs > 0 && resp.tokens
                   ? ((resp.tokens / resp.latencyMs) * 1000).toFixed(1)
@@ -454,19 +438,19 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
               return (
                 <div
                   key={modelKey}
-                  className={`flex flex-col rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-xl overflow-hidden backdrop-blur-sm transition-all ${theme.borderAccent}`}
+                  className={`flex flex-col rounded-2xl bg-surface border border-border shadow-card overflow-hidden transition-all ${theme.borderAccent}`}
                 >
                   {/* Pane Header */}
-                  <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5 bg-[#0e1117]">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-black/40 border border-white/[0.08] text-amber-400 shrink-0">
-                        <Cpu className="h-3.5 w-3.5" />
-                      </div>
+                  <div className="flex items-center justify-between border-b border-border px-3.5 py-2 bg-surface-secondary/40">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`h-2.5 w-2.5 rounded-full ${theme.dotBg} shrink-0`} />
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-white truncate">{target.model}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-semibold text-foreground truncate">
+                            {target.model}
+                          </span>
                           <span
-                            className={`rounded-md px-1.5 py-0.2 text-[9px] uppercase font-mono border ${theme.badgeBg}`}
+                            className={`rounded-full px-1.5 py-0.2 text-[9px] uppercase font-mono border ${theme.badgeBg}`}
                           >
                             {target.providerId}
                           </span>
@@ -474,18 +458,17 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                       </div>
                     </div>
 
-                    {/* Pane Actions & Performance Metrics */}
-                    <div className="flex items-center gap-2 shrink-0">
+                    {/* Pane Actions & Metrics */}
+                    <div className="flex items-center gap-1 shrink-0">
                       {resp?.latencyMs ? (
-                        <span className="flex items-center gap-1 text-[10px] text-slate-400 font-mono">
-                          <Clock className="h-3 w-3 text-slate-500" />
+                        <span className="flex items-center gap-1 text-[10px] text-text-muted font-mono mr-1">
+                          <Clock className="h-3 w-3" />
                           {(resp.latencyMs / 1000).toFixed(2)}s
                         </span>
                       ) : null}
 
                       {tokensPerSec && (
-                        <span className="flex items-center gap-0.5 text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                          <Flame className="h-2.5 w-2.5" />
+                        <span className="text-[10px] text-text-secondary font-mono mr-1">
                           {tokensPerSec} t/s
                         </span>
                       )}
@@ -493,11 +476,11 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                       {resp?.content && (
                         <button
                           onClick={() => handleCopy(modelKey, resp.content)}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                          className="rounded-lg p-1 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
                           title="Copy response"
                         >
                           {copiedKey === modelKey ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-400" />
+                            <Check className="h-3.5 w-3.5 text-[#10a37f]" />
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
@@ -513,8 +496,8 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                             setLayoutMode('focus');
                           }
                         }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
-                        title={layoutMode === 'focus' ? 'Back to Grid view' : 'Maximize this pane'}
+                        className="rounded-lg p-1 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
+                        title={layoutMode === 'focus' ? 'Back to Grid view' : 'Focus this pane'}
                       >
                         {layoutMode === 'focus' ? (
                           <Minimize2 className="h-3.5 w-3.5" />
@@ -526,7 +509,7 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                       <button
                         onClick={() => onRetryPane(target)}
                         disabled={isStreaming}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-30 transition-colors"
+                        className="rounded-lg p-1 text-text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-30 transition-colors"
                         title="Retry this pane"
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
@@ -535,39 +518,39 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
                   </div>
 
                   {/* Pane Content Body */}
-                  <div className={`flex-1 overflow-y-auto p-4 sm:p-5 ${getTextSizeClass()} text-slate-200`}>
+                  <div className={`flex-1 overflow-y-auto p-4 sm:p-5 ${getTextSizeClass()} text-foreground`}>
                     {!resp && !isStreaming && (
-                      <div className="flex h-full min-h-[160px] flex-col items-center justify-center text-center p-6 text-slate-500">
-                        <Sparkles className="h-6 w-6 text-slate-700 mb-2" />
-                        <p className="text-xs">Waiting for prompt submission...</p>
+                      <div className="flex h-full min-h-[140px] flex-col items-center justify-center text-center p-4 text-text-muted">
+                        <Sparkles className="h-5 w-5 mb-1.5 opacity-50" />
+                        <p className="text-xs">Ready for prompt...</p>
                       </div>
                     )}
 
                     {isCurrentStreaming && !resp?.content && (
-                      <div className="flex items-center gap-2 text-amber-400 text-xs py-4">
+                      <div className="flex items-center gap-2 text-text-secondary text-xs py-3">
                         <span className="streaming-cursor" />
-                        <span className="animate-pulse font-mono">Dispatched to {target.model}...</span>
+                        <span className="animate-pulse">Waiting for {target.model}...</span>
                       </div>
                     )}
 
                     {hasError && (
-                      <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-4 text-xs text-red-400 space-y-2.5">
-                        <div className="flex items-center gap-2 font-semibold">
-                          <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
-                          <span>Provider Execution Error</span>
+                      <div className="rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-xs text-red-600 dark:text-red-400 space-y-2">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <AlertCircle className="h-4 w-4 shrink-0" />
+                          <span>Generation Error</span>
                         </div>
-                        <p className="text-red-300/90 leading-relaxed">{resp.error || 'Failed to generate response'}</p>
+                        <p className="leading-relaxed opacity-90">{resp.error || 'Failed to generate response'}</p>
                         <button
                           onClick={() => onRetryPane(target)}
-                          className="inline-flex items-center gap-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 px-3 py-1.5 text-xs text-red-200 font-medium transition-colors"
+                          className="inline-flex items-center gap-1 rounded-lg bg-red-500/20 px-2.5 py-1 text-[11px] font-medium transition-colors"
                         >
-                          <RefreshCw className="h-3 w-3" /> Retry Pane
+                          <RefreshCw className="h-3 w-3" /> Retry
                         </button>
                       </div>
                     )}
 
                     {resp?.content && (
-                      <div className="arena-prose whitespace-pre-wrap selection:bg-amber-500 selection:text-black">
+                      <div className="arena-prose whitespace-pre-wrap">
                         {resp.content}
                         {isCurrentStreaming && <span className="streaming-cursor" />}
                       </div>
@@ -576,12 +559,12 @@ export const ArenaPanes: React.FC<ArenaPanesProps> = ({
 
                   {/* Pane Footer */}
                   {resp && (
-                    <div className="flex items-center justify-between border-t border-white/[0.06] px-4 py-2 bg-[#0c0e14] text-[10px] text-slate-400 font-mono">
+                    <div className="flex items-center justify-between border-t border-border px-3.5 py-1.5 bg-surface-secondary/30 text-[10px] text-text-muted font-mono">
                       <div className="flex items-center gap-3">
                         <span>{resp.tokens || 0} tokens</span>
                         <span>{resp.content ? resp.content.split(/\s+/).filter(Boolean).length : 0} words</span>
                       </div>
-                      <span className="capitalize text-slate-400 font-semibold">{resp.status}</span>
+                      <span className="capitalize">{resp.status}</span>
                     </div>
                   )}
                 </div>

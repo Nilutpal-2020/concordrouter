@@ -11,7 +11,8 @@ import {
   ShieldCheck,
   HelpCircle,
   BookOpen,
-  Sliders,
+  Sun,
+  Moon,
   ChevronRight,
 } from 'lucide-react';
 
@@ -25,6 +26,8 @@ interface NavbarProps {
   onOpenModelSelector: () => void;
   onOpenSettings: () => void;
   onNewChat: () => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -35,6 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenModelSelector,
   onOpenSettings,
   onNewChat,
+  theme = 'dark',
+  onToggleTheme,
 }) => {
   const connectedCount = providers.filter((p) => p.isConnected).length;
 
@@ -48,42 +53,40 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="glass-header sticky top-0 z-40 flex h-16 items-center justify-between px-4 lg:px-6">
-      {/* Brand & Logo */}
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md transition-colors lg:px-6">
+      {/* Brand & Logo - Clean Claude / ChatGPT minimalist identity */}
       <div className="flex items-center gap-6">
         <button
           onClick={() => onNavigate('arena')}
-          className="flex items-center gap-3 text-left group"
+          className="flex items-center gap-2.5 text-left group"
         >
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-600 via-amber-500 to-amber-400 shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
-            <Layers className="h-5 w-5 text-black font-bold" />
-            <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 opacity-0 group-hover:opacity-40 blur-sm transition-opacity" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-secondary border border-border group-hover:border-border-strong transition-all">
+            <Layers className="h-4 w-4 text-foreground transition-transform group-hover:scale-105" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-extrabold text-sm sm:text-base tracking-tight text-white group-hover:text-amber-300 transition-colors">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm tracking-tight text-foreground">
                 ConcordRouter
               </span>
-              <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold text-amber-300 border border-amber-500/20">
-                PROMPT ARENA
+              <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary border border-border">
+                Arena
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium hidden sm:block">Multi-Model Consensus & Merge</p>
           </div>
         </button>
 
-        {/* Navigation Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-[#12151c]/90 p-1 rounded-xl border border-white/[0.06]">
+        {/* Minimal Navigation Tabs */}
+        <nav className="hidden md:flex items-center gap-1 bg-surface-secondary/70 p-1 rounded-xl border border-border">
           {navItems.map((item) => {
             const isActive = currentView === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-black shadow-sm font-bold'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                    ? 'bg-surface text-foreground shadow-sm font-semibold'
+                    : 'text-text-secondary hover:text-foreground hover:bg-surface-hover/50'
                 }`}
               >
                 {item.icon}
@@ -99,45 +102,58 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Model Selector Bar */}
         <button
           onClick={onOpenModelSelector}
-          className="flex items-center gap-2 rounded-xl bg-[#13161f] hover:bg-[#1a1f2c] px-3 py-1.5 border border-white/[0.08] transition-all text-xs font-medium text-slate-200 shadow-sm hover:border-amber-500/30"
+          className="flex items-center gap-2 rounded-full bg-surface-secondary hover:bg-surface-hover px-3 py-1.5 border border-border transition-all text-xs font-medium text-foreground shadow-sm"
           title="Select active models for fan-out"
         >
           <div className="flex -space-x-1.5">
             {selectedModels.map((m, idx) => (
               <span
                 key={idx}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#1e2330] ring-2 ring-[#090b0e] text-[10px] uppercase font-bold text-amber-300 border border-white/[0.08]"
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-surface ring-1 ring-border text-[9px] uppercase font-bold text-foreground"
               >
                 {m.providerId.slice(0, 1)}
               </span>
             ))}
           </div>
-          <span className="hidden sm:inline">
+          <span className="text-xs font-medium text-foreground">
             {selectedModels.length} Models
           </span>
-          <span className="text-amber-400 text-[10px] bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 font-mono font-semibold">
-            Select
-          </span>
+          <span className="text-text-muted text-[10px]">▾</span>
         </button>
 
         {/* BYOA Key Vault */}
         <button
           onClick={onOpenSettings}
-          className="relative flex items-center gap-1.5 rounded-xl bg-[#13161f] hover:bg-[#1a1f2c] px-3 py-1.5 border border-white/[0.08] text-xs font-medium text-slate-200 transition-all shadow-sm hover:border-amber-500/30"
+          className="flex items-center gap-1.5 rounded-full bg-surface-secondary hover:bg-surface-hover px-3 py-1.5 border border-border text-xs font-medium text-foreground transition-all shadow-sm"
           title="BYOA Provider Keys & Endpoints (Encrypted at Rest)"
         >
-          <Key className="h-3.5 w-3.5 text-amber-400" />
-          <span className="hidden sm:inline">Key Vault</span>
-          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-mono text-emerald-400 border border-emerald-500/20">
+          <Key className="h-3.5 w-3.5 text-text-secondary" />
+          <span className="hidden sm:inline">Keys</span>
+          <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-mono text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
             {connectedCount}
           </span>
         </button>
 
-        {/* Launch Arena Button or New Chat */}
+        {/* Light / Dark Mode Toggle */}
+        {onToggleTheme && (
+          <button
+            onClick={onToggleTheme}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-secondary hover:bg-surface-hover border border-border text-text-secondary hover:text-foreground transition-all"
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} mode`}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4 transition-transform hover:rotate-45" />
+            ) : (
+              <Moon className="h-4 w-4 transition-transform hover:-rotate-12" />
+            )}
+          </button>
+        )}
+
+        {/* Launch Arena Button or New Session */}
         {currentView !== 'arena' ? (
           <button
             onClick={() => onNavigate('arena')}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-3.5 py-1.5 text-xs font-bold text-black shadow-md shadow-amber-500/20 transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 rounded-full bg-foreground text-background px-3.5 py-1.5 text-xs font-medium hover:opacity-90 transition-all active:scale-[0.98]"
           >
             <span>Open Arena</span>
             <ChevronRight className="h-3.5 w-3.5" />
@@ -145,10 +161,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         ) : (
           <button
             onClick={onNewChat}
-            className="flex items-center gap-1.5 rounded-xl bg-[#181d27] hover:bg-[#202634] border border-white/[0.08] hover:border-amber-500/30 px-3.5 py-1.5 text-xs font-semibold text-slate-200 transition-all active:scale-[0.98]"
+            className="flex items-center gap-1.5 rounded-full bg-foreground text-background px-3.5 py-1.5 text-xs font-medium hover:opacity-90 transition-all active:scale-[0.98]"
           >
-            <Plus className="h-3.5 w-3.5 text-amber-400" />
-            <span className="hidden sm:inline">New Session</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">New Arena</span>
           </button>
         )}
       </div>

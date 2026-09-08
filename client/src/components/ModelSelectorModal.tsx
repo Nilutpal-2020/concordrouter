@@ -28,43 +28,43 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-      <div className="flex w-full max-w-xl flex-col rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-lg flex-col rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#0e1117]">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-surface-secondary/40">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Layers className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface border border-border text-foreground">
+              <Layers className="h-4 w-4 text-brand-terracotta" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Target Model Selection</h2>
-              <p className="text-xs text-slate-400">
-                Choose 1 to 4 models to fan-out your prompts to concurrently
+              <h2 className="text-sm font-semibold text-foreground">Target Model Selection</h2>
+              <p className="text-xs text-text-secondary">
+                Select models to fan-out queries simultaneously
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="max-h-[60vh] overflow-y-auto p-6 space-y-6">
+        <div className="max-h-[60vh] overflow-y-auto p-5 space-y-5">
           {providers.map((p) => {
             const isConnected = p.isConnected;
             return (
-              <div key={p.id} className="space-y-2.5">
+              <div key={p.id} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-xs capitalize text-slate-200">{p.name}</span>
+                    <span className="font-medium text-xs capitalize text-foreground">{p.name}</span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-mono ${
+                      className={`rounded-full px-2 py-0.2 text-[9px] font-mono ${
                         isConnected
-                          ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                          : 'bg-[#191d28] text-slate-400 border border-white/[0.06]'
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                          : 'bg-surface-secondary text-text-muted border border-border'
                       }`}
                     >
                       {isConnected ? 'Connected' : 'Setup Required'}
@@ -74,7 +74,7 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                   {!isConnected && (
                     <button
                       onClick={onOpenSettings}
-                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold hover:underline"
+                      className="text-[11px] text-text-secondary hover:text-foreground font-medium"
                     >
                       Configure Keys →
                     </button>
@@ -88,24 +88,24 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
                       <div
                         key={model.id}
                         onClick={() => onToggleModel(p.id, model.id)}
-                        className={`flex items-center justify-between rounded-xl p-3 text-xs cursor-pointer border transition-all ${
+                        className={`flex items-center justify-between rounded-xl p-2.5 text-xs cursor-pointer border transition-all ${
                           selected
-                            ? 'bg-amber-500/15 border-amber-500/50 shadow-sm shadow-amber-500/10'
-                            : 'bg-[#141822] border-white/[0.06] text-slate-300 hover:border-amber-500/30'
+                            ? 'bg-surface-secondary border-border-strong text-foreground shadow-sm'
+                            : 'bg-surface hover:bg-surface-secondary/50 border-border text-text-secondary'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate pr-2">
-                          <Cpu className={`h-3.5 w-3.5 shrink-0 ${selected ? 'text-amber-400' : 'text-slate-500'}`} />
-                          <span className={`truncate font-mono ${selected ? 'text-white font-bold' : 'text-slate-300'}`}>
+                          <Cpu className={`h-3.5 w-3.5 shrink-0 ${selected ? 'text-foreground' : 'text-text-muted'}`} />
+                          <span className={`truncate font-mono ${selected ? 'font-semibold text-foreground' : ''}`}>
                             {model.name}
                           </span>
                         </div>
 
                         <div
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-all ${
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-md border transition-all ${
                             selected
-                              ? 'bg-amber-500 border-amber-500 text-black font-bold'
-                              : 'border-white/[0.2] bg-black/40'
+                              ? 'bg-foreground border-foreground text-background font-bold'
+                              : 'border-border bg-surface-secondary'
                           }`}
                         >
                           {selected && <Check className="h-3 w-3 stroke-[3]" />}
@@ -120,13 +120,13 @@ export const ModelSelectorModal: React.FC<ModelSelectorModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between border-t border-white/[0.06] px-6 py-3.5 bg-[#0e1117]">
-          <div className="text-xs text-slate-400">
-            <span className="font-mono text-amber-400 font-bold">{selectedModels.length}</span> model(s) selected
+        <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-surface-secondary/40">
+          <div className="text-xs text-text-muted">
+            <span className="font-mono text-foreground font-semibold">{selectedModels.length}</span> model(s) active
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 px-5 py-2 text-xs font-bold text-black shadow-md shadow-amber-500/20 transition-all"
+            className="rounded-full bg-foreground text-background hover:opacity-90 px-4 py-1.5 text-xs font-medium transition-all shadow-sm active:scale-95"
           >
             Done
           </button>

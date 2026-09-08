@@ -30,13 +30,28 @@ import {
 const getSegmentMeta = (type: ChunkSegment['type']) => {
   switch (type) {
     case 'code':
-      return { icon: Code2, label: 'Code', extraClass: 'bg-black/40 border-emerald-500/20', textClass: 'font-mono text-emerald-300/80 text-[11px]' };
+      return {
+        icon: Code2,
+        label: 'Code',
+        extraClass: 'bg-surface-secondary border-border',
+        textClass: 'font-mono text-emerald-600 dark:text-emerald-400 text-[11px]',
+      };
     case 'blockquote':
-      return { icon: Quote, label: 'Quote', extraClass: 'border-l-2 border-l-amber-500/40', textClass: '' };
+      return {
+        icon: Quote,
+        label: 'Quote',
+        extraClass: 'border-l-2 border-brand-terracotta',
+        textClass: '',
+      };
     case 'table':
-      return { icon: TableProperties, label: 'Table', extraClass: 'bg-slate-950/60 border-cyan-500/20', textClass: 'font-mono text-[11px]' };
+      return {
+        icon: TableProperties,
+        label: 'Table',
+        extraClass: 'bg-surface-secondary border-border',
+        textClass: 'font-mono text-[11px]',
+      };
     case 'header':
-      return { icon: Layers, label: 'Heading', extraClass: '', textClass: 'font-semibold text-white' };
+      return { icon: Layers, label: 'Heading', extraClass: '', textClass: 'font-semibold text-foreground' };
     case 'bullet':
     case 'list_group':
       return { icon: List, label: 'List Item', extraClass: '', textClass: '' };
@@ -83,9 +98,11 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
   const [alignmentResult, setAlignmentResult] = useState<AlignmentResult | null>(null);
   const [pickedSegments, setPickedSegments] = useState<ChunkSegment[]>([]);
   const [draftText, setDraftText] = useState<string>('');
-  
+
   // AI Synthesis state (Phase 6)
-  const [synthesisModel, setSynthesisModel] = useState<TargetModel>(availableModels[0] || { providerId: 'mock', model: 'mock-concise' });
+  const [synthesisModel, setSynthesisModel] = useState<TargetModel>(
+    availableModels[0] || { providerId: 'mock', model: 'mock-concise' }
+  );
   const [isSynthesizing, setIsSynthesizing] = useState<boolean>(false);
   const [isAISynthesized, setIsAISynthesized] = useState<boolean>(false);
   const abortSynthesisRef = useRef<(() => void) | null>(null);
@@ -99,101 +116,118 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
     setIsLoading(true);
     setIsAISynthesized(false);
 
-    Promise.all([
-      segmentResponseText(responseA?.content || '', modelAKey),
-      segmentResponseText(responseB?.content || '', modelBKey),
-      fetchSemanticAlignment(modelAKey, responseA?.content || '', modelBKey, responseB?.content || ''),
-    ])
-      .then(([segsA, segsB, alignment]) => {
+    const loadData = async () => {
+      try {
+        const [segsA, segsB] = await Promise.all([
+          segmentResponseText(responseA?.content || '', modelAKey),
+          segmentResponseText(responseB?.content || '', modelBKey),
+        ]);
+
         setSegmentsA(segsA);
         setSegmentsB(segsB);
-        setAlignmentResult(alignment);
-        setPickedSegments([]);
-        setDraftText('');
-      })
-      .catch((err) => {
-        console.error('Failed to load merge data:', err);
-      })
-      .finally(() => setIsLoading(false));
-  }, [isOpen, modelAKey, modelBKey, responseA?.content, responseB?.content]);
+
+        try {
+          const alignRes = await fetchSemanticAlignment(
+            modelAKey,
+            responseA?.content || '',
+            modelBKey,
+            responseB?.content || ''
+          );
+          setAlignmentResult(alignRes);
+        } catch (alignErr) {
+          console.error('Failed to compute semantic alignment:', alignErr);
+        }
+      } catch (err) {
+        console.error('Failed to segment responses:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [isOpen, responseA?.content, responseB?.content]);
 
   if (!isOpen) return null;
 
-  // Chunk actions
   const handleAddSegment = (seg: ChunkSegment) => {
+    setPickedSegments((prev) => [...prev, seg]);
+    setDraftText((prev) => (prev ? `${prev}\n\n${seg.content}` : seg.content));
     setIsAISynthesized(false);
-    const updated = [...pickedSegments, seg];
-    setPickedSegments(updated);
-    setDraftText((prev) => (prev ? prev + '\n\n' + seg.content : seg.content));
-  };
-
-  const handleAppendText = (content: string) => {
-    setIsAISynthesized(false);
-    setDraftText((prev) => (prev ? prev + '\n\n' + content : content));
-  };
-
-  const handleAcceptBoth = (textA: string, textB: string) => {
-    setIsAISynthesized(false);
-    setDraftText((prev) => (prev ? prev + '\n\n' + textA + '\n\n' + textB : textA + '\n\n' + textB));
   };
 
   const handleAcceptAllA = () => {
+    setPickedSegments((prev) => [...prev, ...segmentsA]);
+    const added = segmentsA.map((s) => s.content).join('\n\n');
+    setDraftText((prev) => (prev ? `${prev}\n\n${added}` : added));
     setIsAISynthesized(false);
-    setDraftText(responseA?.content || '');
-    setPickedSegments(segmentsA);
   };
 
   const handleAcceptAllB = () => {
+    setPickedSegments((prev) => [...prev, ...segmentsB]);
+    const added = segmentsB.map((s) => s.content).join('\n\n');
+    setDraftText((prev) => (prev ? `${prev}\n\n${added}` : added));
     setIsAISynthesized(false);
-    setDraftText(responseB?.content || '');
-    setPickedSegments(segmentsB);
   };
 
-  // Phase 6: AI Synthesis Trigger
+  const handleAppendText = (content: string) => {
+    setDraftText((prev) => (prev ? `${prev}\n\n${content}` : content));
+    setIsAISynthesized(false);
+  };
+
+  const handleAcceptBoth = (left: string, right: string) => {
+    const combined = `${left}\n\n${right}`;
+    setDraftText((prev) => (prev ? `${prev}\n\n${combined}` : combined));
+    setIsAISynthesized(false);
+  };
+
   const handleGenerateSynthesis = async () => {
     setIsSynthesizing(true);
-    setDraftText('');
     setIsAISynthesized(true);
+    setDraftText('');
 
-    const abortFn = await streamSynthesis(
-      threadId,
-      userPrompt || 'Synthesize both answers',
-      modelAKey,
-      responseA?.content || '',
-      modelBKey,
-      responseB?.content || '',
-      synthesisModel,
-      (chunk: StreamChunk) => {
-        if (chunk.fullText) {
-          setDraftText(chunk.fullText);
-        } else if (chunk.delta) {
-          setDraftText((prev) => prev + chunk.delta);
+    try {
+      const abortFn = await streamSynthesis(
+        threadId,
+        userPrompt,
+        modelAKey,
+        responseA?.content || '',
+        modelBKey,
+        responseB?.content || '',
+        synthesisModel,
+        (chunk: StreamChunk) => {
+          if (chunk.delta) {
+            setDraftText((prev) => prev + chunk.delta);
+          }
+          if (chunk.fullText) {
+            setDraftText(chunk.fullText);
+          }
+        },
+        (err) => {
+          console.error('Synthesis error:', err);
+          setIsSynthesizing(false);
+        },
+        () => {
+          setIsSynthesizing(false);
         }
-      },
-      (err) => {
-        console.error('Synthesis error:', err);
-        setIsSynthesizing(false);
-      },
-      () => {
-        setIsSynthesizing(false);
-      }
-    );
-
-    abortSynthesisRef.current = abortFn;
+      );
+      abortSynthesisRef.current = abortFn;
+    } catch (err) {
+      console.error('Failed to trigger synthesis:', err);
+      setIsSynthesizing(false);
+    }
   };
 
   const handleSaveAndContinue = async () => {
     if (!draftText.trim()) return;
 
-    const strategy = isAISynthesized
-      ? 'ai_synthesis'
-      : activeTab === 'semantic'
-      ? 'diff_structured'
-      : 'manual_cherrypick';
-
     try {
+      const strategy: 'ai_synthesis' | 'diff_structured' | 'manual_cherrypick' = isAISynthesized
+        ? 'ai_synthesis'
+        : activeTab === 'semantic'
+        ? 'diff_structured'
+        : 'manual_cherrypick';
+
       await saveMergeRecord(threadId, {
-        threadId,
         turnId,
         sourceModels: [modelAKey, modelBKey],
         mergedText: draftText,
@@ -216,38 +250,38 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="flex flex-col w-full max-w-[1400px] h-[94vh] rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="flex flex-col w-full max-w-[1360px] h-[92vh] rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden">
         {/* Top Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-3.5 bg-[#0e1117]">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-3 bg-surface-secondary/40">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-amber-600 to-amber-500 text-black font-bold shadow-md shadow-amber-500/20">
-              <GitMerge className="h-5 w-5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface border border-border text-foreground">
+              <GitMerge className="h-4 w-4 text-brand-terracotta" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
+              <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 Response Reconciliation Workbench
                 {alignmentResult && (
-                  <span className="text-[11px] bg-amber-500/10 text-amber-300 border border-amber-500/20 rounded-full px-2 py-0.2 font-mono">
+                  <span className="text-[10px] bg-surface text-text-secondary border border-border rounded-full px-2 py-0.2 font-mono">
                     {Math.round(alignmentResult.overallAgreement * 100)}% Consensus
                   </span>
                 )}
               </h2>
-              <p className="text-xs text-slate-400">
-                Comparing <span className="text-amber-400 font-semibold">{modelAKey}</span> vs{' '}
-                <span className="text-emerald-400 font-semibold">{modelBKey}</span>
+              <p className="text-xs text-text-secondary">
+                Comparing <span className="font-medium text-foreground">{modelAKey}</span> vs{' '}
+                <span className="font-medium text-foreground">{modelBKey}</span>
               </p>
             </div>
           </div>
 
           {/* Mode Selector Tabs */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-black/40 p-1 border border-white/[0.06] text-xs">
+          <div className="flex items-center gap-1 rounded-xl bg-surface-secondary p-0.5 border border-border text-xs">
             <button
               onClick={() => setActiveTab('semantic')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
                 activeTab === 'semantic'
-                  ? 'bg-amber-500 text-black font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
             >
               <Split className="h-3.5 w-3.5" />
@@ -256,10 +290,10 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
             <button
               onClick={() => setActiveTab('cherrypick')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
                 activeTab === 'cherrypick'
-                  ? 'bg-amber-500 text-black font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
             >
               <Layers className="h-3.5 w-3.5" />
@@ -268,47 +302,47 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
             <button
               onClick={() => setActiveTab('synthesis')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg font-medium transition-all ${
                 activeTab === 'synthesis'
-                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-black font-bold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-surface text-foreground shadow-sm'
+                  : 'text-text-muted hover:text-foreground'
               }`}
             >
-              <Sparkles className="h-3.5 w-3.5" />
+              <Sparkles className="h-3.5 w-3.5 text-brand-terracotta" />
               <span>AI Synthesis</span>
             </button>
           </div>
 
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Main 2-Pane Workspace Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-white/[0.06]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 overflow-hidden divide-y lg:divide-y-0 lg:divide-x divide-border">
           {/* Left / Center Area: Comparison Mode Content */}
-          <div className="lg:col-span-7 flex flex-col h-full bg-black/20 overflow-hidden">
+          <div className="lg:col-span-7 flex flex-col h-full bg-surface-secondary/20 overflow-hidden">
             {isLoading ? (
-              <div className="flex flex-1 items-center justify-center text-slate-500 gap-2 text-xs">
-                <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+              <div className="flex flex-1 items-center justify-center text-text-muted gap-2 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin text-foreground" />
                 <span>Computing sequence alignment & similarity matrix...</span>
               </div>
             ) : activeTab === 'semantic' ? (
               /* Phase 5: Semantic Diff View + Heatmap Toggle */
               <div className="flex flex-col h-full overflow-hidden">
-                <div className="flex items-center justify-between border-b border-slate-800 px-4 py-2.5 bg-slate-950/80">
-                  <span className="text-xs font-semibold text-slate-300">
-                    Needleman-Wunsch Aligned Hunks
+                <div className="flex items-center justify-between border-b border-border px-4 py-2 bg-surface-secondary/40">
+                  <span className="text-xs font-medium text-text-secondary">
+                    Aligned Hunks
                   </span>
                   <button
                     onClick={() => setShowHeatmap(!showHeatmap)}
                     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                       showHeatmap
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                        ? 'bg-surface text-foreground border-border shadow-sm'
+                        : 'bg-surface-secondary text-text-muted border-border hover:text-foreground'
                     }`}
                   >
                     <Grid className="h-3.5 w-3.5" />
@@ -318,7 +352,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
                 <div className="flex-1 overflow-y-auto">
                   {showHeatmap && alignmentResult && (
-                    <div className="border-b border-slate-800 bg-slate-950/90">
+                    <div className="border-b border-border bg-surface-secondary/30">
                       <SimilarityHeatmap
                         matrix={alignmentResult.similarityMatrix}
                         leftSegments={alignmentResult.leftSegments}
@@ -341,14 +375,14 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
               </div>
             ) : activeTab === 'cherrypick' ? (
               /* Phase 3: Manual Cherry-Pick 2-Column Split */
-              <div className="grid grid-cols-2 flex-1 overflow-hidden divide-x divide-slate-800">
+              <div className="grid grid-cols-2 flex-1 overflow-hidden divide-x divide-border">
                 {/* Model A Column */}
                 <div className="flex flex-col h-full overflow-hidden">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-800 bg-slate-950/80">
-                    <span className="text-xs font-semibold text-cyan-400 truncate">{modelAKey}</span>
+                  <div className="flex items-center justify-between px-3.5 py-2 border-b border-border bg-surface-secondary/40">
+                    <span className="text-xs font-medium text-foreground truncate">{modelAKey}</span>
                     <button
                       onClick={handleAcceptAllA}
-                      className="text-[11px] text-cyan-400 hover:text-cyan-300 font-medium"
+                      className="text-[11px] text-text-secondary hover:text-foreground font-medium"
                     >
                       Accept All →
                     </button>
@@ -361,14 +395,14 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                         <div
                           key={seg.id}
                           onClick={() => handleAddSegment(seg)}
-                          className={`group relative rounded-xl bg-slate-900/80 hover:bg-cyan-950/30 border border-slate-800 hover:border-cyan-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all ${meta.extraClass}`}
+                          className={`group relative rounded-xl bg-surface hover:bg-surface-hover border border-border hover:border-border-strong p-2.5 text-xs text-foreground cursor-pointer transition-all shadow-sm ${meta.extraClass}`}
                         >
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+                          <div className="flex items-center justify-between text-[10px] text-text-muted font-mono mb-1">
                             <span className="flex items-center gap-1 uppercase">
                               {SegIcon && <SegIcon className="h-3 w-3" />}
                               {meta.label}
                             </span>
-                            <span className="opacity-0 group-hover:opacity-100 text-cyan-400 flex items-center gap-1 font-sans transition-opacity">
+                            <span className="opacity-0 group-hover:opacity-100 text-foreground flex items-center gap-1 font-sans transition-opacity">
                               <Plus className="h-3 w-3" /> Pick
                             </span>
                           </div>
@@ -381,11 +415,11 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
 
                 {/* Model B Column */}
                 <div className="flex flex-col h-full overflow-hidden">
-                  <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-800 bg-slate-950/80">
-                    <span className="text-xs font-semibold text-purple-400 truncate">{modelBKey}</span>
+                  <div className="flex items-center justify-between px-3.5 py-2 border-b border-border bg-surface-secondary/40">
+                    <span className="text-xs font-medium text-foreground truncate">{modelBKey}</span>
                     <button
                       onClick={handleAcceptAllB}
-                      className="text-[11px] text-purple-400 hover:text-purple-300 font-medium"
+                      className="text-[11px] text-text-secondary hover:text-foreground font-medium"
                     >
                       Accept All →
                     </button>
@@ -398,14 +432,14 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                         <div
                           key={seg.id}
                           onClick={() => handleAddSegment(seg)}
-                          className={`group relative rounded-xl bg-slate-900/80 hover:bg-purple-950/30 border border-slate-800 hover:border-purple-500/40 p-2.5 text-xs text-slate-300 cursor-pointer transition-all ${meta.extraClass}`}
+                          className={`group relative rounded-xl bg-surface hover:bg-surface-hover border border-border hover:border-border-strong p-2.5 text-xs text-foreground cursor-pointer transition-all shadow-sm ${meta.extraClass}`}
                         >
-                          <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono mb-1">
+                          <div className="flex items-center justify-between text-[10px] text-text-muted font-mono mb-1">
                             <span className="flex items-center gap-1 uppercase">
                               {SegIcon && <SegIcon className="h-3 w-3" />}
                               {meta.label}
                             </span>
-                            <span className="opacity-0 group-hover:opacity-100 text-purple-400 flex items-center gap-1 font-sans transition-opacity">
+                            <span className="opacity-0 group-hover:opacity-100 text-foreground flex items-center gap-1 font-sans transition-opacity">
                               <Plus className="h-3 w-3" /> Pick
                             </span>
                           </div>
@@ -419,25 +453,25 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
             ) : (
               /* Phase 6: AI-Assisted Synthesis Hub */
               <div className="flex flex-col flex-1 p-6 space-y-5 overflow-y-auto">
-                <div className="rounded-2xl bg-gradient-to-r from-purple-950/40 via-indigo-950/40 to-slate-900 border border-purple-500/30 p-5 space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Sparkles className="h-4 w-4 text-amber-300" />
+                <div className="rounded-2xl bg-surface border border-border p-5 space-y-3 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <Sparkles className="h-4 w-4 text-brand-terracotta" />
                     <span>LLM Synthesis Engine</span>
                   </div>
-                  <p className="text-xs leading-relaxed text-slate-300">
-                    Sends both full responses along with explicit reconciliation guidelines to an LLM to produce a cohesive, de-duplicated draft.
+                  <p className="text-xs leading-relaxed text-text-secondary">
+                    Sends both responses with reconciliation instructions to an LLM to produce a cohesive, de-duplicated answer draft.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-slate-400">Synthesize using:</span>
+                      <span className="text-xs text-text-muted">Synthesize using:</span>
                       <select
                         value={`${synthesisModel.providerId}:${synthesisModel.model}`}
                         onChange={(e) => {
                           const [pId, mod] = e.target.value.split(':');
                           setSynthesisModel({ providerId: pId, model: mod });
                         }}
-                        className="rounded-xl bg-slate-950 border border-slate-800 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                        className="rounded-xl bg-surface-secondary border border-border px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-border-strong font-mono"
                       >
                         <option value="mock:mock-concise">Mock Fast (Simulated)</option>
                         <option value="mock:mock-creative">Mock Creative (Simulated)</option>
@@ -451,7 +485,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                     <button
                       onClick={handleGenerateSynthesis}
                       disabled={isSynthesizing}
-                      className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:opacity-50 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-purple-600/30 transition-all active:scale-[0.98]"
+                      className="flex items-center gap-2 rounded-full bg-foreground text-background hover:opacity-90 disabled:opacity-50 px-4 py-2 text-xs font-medium transition-all active:scale-[0.98] shadow-sm"
                     >
                       {isSynthesizing ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -463,13 +497,13 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                   </div>
                 </div>
 
-                <div className="rounded-xl bg-slate-950/60 border border-slate-800 p-4 text-xs text-slate-400 space-y-2">
-                  <div className="flex items-center gap-2 font-semibold text-slate-300">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
-                    <span>Trust Level Distinction (§4)</span>
+                <div className="rounded-xl bg-surface border border-border p-4 text-xs text-text-secondary space-y-1.5">
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span>Trust Level Distinction</span>
                   </div>
-                  <p>
-                    Unlike deterministic alignment diffs which are mechanically extracted from source chunks, AI Synthesis is a freshly generated draft. It will be badged as such and remains 100% user-editable.
+                  <p className="leading-relaxed">
+                    Unlike deterministic alignment diffs which are extracted verbatim from source models, AI Synthesis is a generated draft. It remains 100% user-editable before saving.
                   </p>
                 </div>
               </div>
@@ -477,25 +511,25 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
           </div>
 
           {/* Right Area: Unified Reconciled Draft Editor */}
-          <div className="lg:col-span-5 flex flex-col h-full bg-slate-900 overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/80">
+          <div className="lg:col-span-5 flex flex-col h-full bg-surface overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface-secondary/30">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-emerald-400" />
-                <span className="text-xs font-semibold text-white">Reconciled Merged Draft</span>
+                <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+                <span className="text-xs font-medium text-foreground">Reconciled Merged Draft</span>
                 {isAISynthesized && (
-                  <span className="rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30 px-2 py-0.2 text-[9px] font-mono">
+                  <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.2 text-[9px] font-mono">
                     AI Synthesis
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={handleCopyDraft}
                   disabled={!draftText}
-                  className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white disabled:opacity-30 transition-colors"
+                  className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-foreground disabled:opacity-30 transition-colors"
                   title="Copy draft"
                 >
-                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
                 {draftText && (
                   <button
@@ -504,7 +538,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                       setDraftText('');
                       setIsAISynthesized(false);
                     }}
-                    className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-red-400 transition-colors"
+                    className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-red-500 transition-colors"
                     title="Clear draft"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -513,7 +547,7 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
               </div>
             </div>
 
-            <div className="flex-1 flex flex-col p-4 space-y-3 overflow-hidden">
+            <div className="flex-1 flex flex-col p-4 space-y-2 overflow-hidden bg-background">
               <textarea
                 value={draftText}
                 onChange={(e) => {
@@ -521,10 +555,10 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                   setIsAISynthesized(false);
                 }}
                 placeholder="Accepted chunks and synthesis drafts appear here for live editing..."
-                className="flex-1 w-full rounded-xl bg-slate-950 border border-slate-800 p-4 text-xs sm:text-sm leading-relaxed text-slate-100 placeholder-slate-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none font-sans"
+                className="flex-1 w-full rounded-xl bg-surface border border-border p-4 text-xs sm:text-sm leading-relaxed text-foreground placeholder-text-muted focus:border-border-strong focus:outline-none resize-none font-sans"
               />
 
-              <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono px-1">
+              <div className="flex items-center justify-between text-[11px] text-text-muted font-mono px-1">
                 <span>{draftText ? draftText.split(/\s+/).filter(Boolean).length : 0} words</span>
                 <span>
                   {isAISynthesized ? 'AI Synthesis Draft' : `${pickedSegments.length} cherry-picked chunks`}
@@ -533,17 +567,17 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
             </div>
 
             {/* Footer Action */}
-            <div className="border-t border-slate-800 px-4 py-3 bg-slate-950/80 flex items-center justify-between">
+            <div className="border-t border-border px-4 py-3 bg-surface-secondary/40 flex items-center justify-between">
               <button
                 onClick={onClose}
-                className="rounded-xl px-3 py-1.5 text-xs text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="rounded-full px-4 py-1.5 text-xs text-text-secondary hover:bg-surface-hover hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveAndContinue}
                 disabled={!draftText.trim()}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 text-xs font-semibold text-white shadow-md shadow-emerald-600/30 transition-all active:scale-[0.98]"
+                className="flex items-center gap-1.5 rounded-full bg-foreground text-background hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed px-4 py-2 text-xs font-medium transition-all active:scale-[0.98] shadow-sm"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Save & Continue Next Turn</span>

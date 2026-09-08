@@ -37,7 +37,7 @@ import { SecurityView } from '@/components/views/SecurityView';
 import { FaqView } from '@/components/views/FaqView';
 import { AboutView } from '@/components/views/AboutView';
 
-import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History } from 'lucide-react';
+import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History, ArrowUp } from 'lucide-react';
 
 export default function ArenaPage() {
   const [currentView, setCurrentView] = useState<AppView>('arena');
@@ -80,6 +80,27 @@ export default function ArenaPage() {
   });
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  useEffect(() => {
+    const saved = (typeof window !== 'undefined' && localStorage.getItem('concord_theme')) as 'dark' | 'light' | null;
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('concord_theme', next);
+      document.documentElement.classList.toggle('dark', next === 'dark');
+    }
+  };
 
   // Load Initial Providers & Threads
   const loadInitialData = async () => {
@@ -364,7 +385,7 @@ export default function ArenaPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#06080d] text-slate-100">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background text-foreground transition-colors">
       {/* Top Universal Navbar */}
       <Navbar
         currentView={currentView}
@@ -374,6 +395,8 @@ export default function ArenaPage() {
         onOpenModelSelector={() => setIsModelSelectorOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onNewChat={handleNewChat}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main View Container */}
@@ -405,21 +428,23 @@ export default function ArenaPage() {
               onNewThread={handleNewChat}
               onDeleteThread={handleDeleteThread}
               onOpenSettings={() => setIsSettingsOpen(true)}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             />
 
             {/* Arena Stage */}
-            <main className="flex flex-1 flex-col overflow-hidden bg-[#090b0e]">
+            <main className="flex flex-1 flex-col overflow-hidden bg-background">
               {/* Secondary Sub-Header */}
-              <div className="flex items-center justify-between px-6 py-2.5 border-b border-white/[0.06] bg-[#0c0f16]/90 text-xs text-slate-400">
+              <div className="flex items-center justify-between px-6 py-2 border-b border-border bg-surface text-xs text-text-secondary">
                 <div className="flex items-center gap-2.5 truncate">
-                  <span className="font-bold text-slate-200 truncate">{activeThreadTitle}</span>
+                  <span className="font-semibold text-foreground truncate">{activeThreadTitle}</span>
                   {turns.length > 0 && (
-                    <span className="rounded-full bg-[#161a24] text-slate-400 border border-white/[0.08] px-2 py-0.5 text-[10px] font-mono">
+                    <span className="rounded-full bg-surface-secondary text-text-secondary border border-border px-2 py-0.5 text-[10px] font-mono">
                       Turn {turns.length}
                     </span>
                   )}
                   {merges.length > 0 && (
-                    <span className="rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono">
+                    <span className="rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-mono">
                       {merges.length} {merges.length === 1 ? 'merge' : 'merges'}
                     </span>
                   )}
@@ -428,27 +453,27 @@ export default function ArenaPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsTemplatesOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-amber-300 border border-amber-500/20 transition-colors"
+                    className="flex items-center gap-1.5 rounded-full bg-surface-secondary hover:bg-surface-hover px-3 py-1 text-[11px] font-medium text-foreground border border-border transition-colors shadow-sm"
                   >
-                    <Sparkles className="h-3 w-3" />
+                    <Sparkles className="h-3 w-3 text-text-muted" />
                     <span>Templates</span>
                   </button>
 
                   {merges.length > 0 && (
                     <button
                       onClick={() => setIsMergeHistoryOpen(true)}
-                      className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-emerald-300 border border-emerald-500/20 transition-colors"
+                      className="flex items-center gap-1.5 rounded-full bg-surface-secondary hover:bg-surface-hover px-3 py-1 text-[11px] font-medium text-foreground border border-border transition-colors shadow-sm"
                     >
-                      <History className="h-3 w-3" />
+                      <History className="h-3 w-3 text-text-muted" />
                       <span>Merge History</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => setIsExportOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg bg-[#141822] hover:bg-[#1a202c] px-2.5 py-1 text-[11px] font-medium text-slate-300 border border-white/[0.08] transition-colors"
+                    className="flex items-center gap-1.5 rounded-full bg-surface-secondary hover:bg-surface-hover px-3 py-1 text-[11px] font-medium text-foreground border border-border transition-colors shadow-sm"
                   >
-                    <Download className="h-3 w-3" />
+                    <Download className="h-3 w-3 text-text-muted" />
                     <span>Export</span>
                   </button>
                 </div>
@@ -456,28 +481,28 @@ export default function ArenaPage() {
 
               {/* Responses Arena Canvas */}
               <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-                <div className="mx-auto max-w-7xl h-full flex flex-col space-y-4">
-                  {/* Current Active User Prompt Card (if turns exist) */}
+                <div className="mx-auto max-w-6xl h-full flex flex-col space-y-4">
+                  {/* Current Active User Prompt (ChatGPT / Claude style message block) */}
                   {turns.length > 0 && (
-                    <div className="rounded-2xl bg-[#11141b]/90 border border-white/[0.08] p-4 shadow-lg backdrop-blur-sm">
-                      <div className="flex items-center justify-between gap-2 mb-1.5">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-400">
-                          Active Prompt Turn #{turns.length}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {selectedModels.map((m, idx) => (
-                            <span
-                              key={idx}
-                              className="rounded bg-black/40 px-1.5 py-0.5 text-[9px] font-mono text-slate-400 border border-white/[0.06]"
-                            >
-                              {m.model}
-                            </span>
-                          ))}
+                    <div className="flex justify-end my-1">
+                      <div className="max-w-2xl rounded-2xl bg-surface-secondary px-4 py-3 border border-border shadow-card">
+                        <div className="flex items-center justify-between gap-3 mb-1 text-[11px] text-text-muted">
+                          <span className="font-semibold text-foreground">You</span>
+                          <div className="flex items-center gap-1">
+                            {selectedModels.map((m, idx) => (
+                              <span
+                                key={idx}
+                                className="rounded bg-surface px-1.5 py-0.2 text-[9px] font-mono text-text-secondary border border-border"
+                              >
+                                {m.model}
+                              </span>
+                            ))}
+                          </div>
                         </div>
+                        <p className="text-xs sm:text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                          {turns[turns.length - 1]?.userPrompt}
+                        </p>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-100 font-medium whitespace-pre-wrap leading-relaxed">
-                        {turns[turns.length - 1]?.userPrompt}
-                      </p>
                     </div>
                   )}
 
@@ -498,10 +523,13 @@ export default function ArenaPage() {
                 </div>
               </div>
 
-              {/* Bottom Floating Prompt Composer */}
-              <div className="glass-header border-t border-white/[0.08] p-4 lg:px-6">
-                <div className="mx-auto max-w-4xl">
-                  <form onSubmit={handleSubmit} className="relative flex items-center">
+              {/* Bottom Floating Prompt Composer (Signature ChatGPT / Claude Style) */}
+              <div className="p-3 sm:p-4 lg:px-6 bg-gradient-to-t from-background via-background/90 to-transparent">
+                <div className="mx-auto max-w-3xl">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="relative rounded-3xl bg-surface border border-border hover:border-border-strong shadow-composer transition-all flex flex-col p-3"
+                  >
                     <textarea
                       ref={textareaRef}
                       value={promptInput}
@@ -512,42 +540,59 @@ export default function ArenaPage() {
                           handleSubmit();
                         }
                       }}
-                      rows={1}
-                      placeholder={`Ask ${selectedModels.length} models simultaneously... (Enter to fan-out, Shift+Enter for newline)`}
-                      className="w-full rounded-2xl bg-[#12161f] border border-white/[0.1] pl-4 pr-32 py-3.5 text-xs sm:text-sm text-white placeholder-slate-500 focus:border-amber-500/60 focus:outline-none focus:ring-1 focus:ring-amber-500/50 shadow-xl resize-none font-sans"
+                      rows={Math.min(5, Math.max(1, promptInput.split('\n').length))}
+                      placeholder={`Message ${selectedModels.length} models simultaneously...`}
+                      className="w-full bg-transparent px-2.5 py-1 text-xs sm:text-sm text-foreground placeholder-text-muted focus:outline-none resize-none font-sans"
                     />
 
-                    <div className="absolute right-2.5 flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsTemplatesOpen(true)}
-                        className="p-1.5 text-slate-400 hover:text-amber-300 transition-colors"
-                        title="Browse prompt templates"
-                      >
-                        <Sparkles className="h-4 w-4 text-amber-400" />
-                      </button>
-
-                      {isStreaming ? (
+                    {/* Action Toolbar inside Composer */}
+                    <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-border/50">
+                      <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={handleStopStream}
-                          className="flex items-center gap-1.5 rounded-xl bg-red-600 hover:bg-red-500 px-3 py-2 text-xs font-semibold text-white shadow-md shadow-red-600/30 transition-all"
+                          onClick={() => setIsModelSelectorOpen(true)}
+                          className="flex items-center gap-1 rounded-full bg-surface-secondary hover:bg-surface-hover px-2.5 py-1 text-xs text-text-secondary hover:text-foreground border border-border transition-colors"
                         >
-                          <StopCircle className="h-3.5 w-3.5" />
-                          <span>Stop</span>
+                          <span className="font-medium">{selectedModels.length} models</span>
                         </button>
-                      ) : (
+
                         <button
-                          type="submit"
-                          disabled={!promptInput.trim()}
-                          className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 disabled:opacity-40 disabled:cursor-not-allowed px-3.5 py-2 text-xs font-bold text-black shadow-md shadow-amber-500/10 transition-all active:scale-[0.98]"
+                          type="button"
+                          onClick={() => setIsTemplatesOpen(true)}
+                          className="flex items-center gap-1 rounded-full bg-surface-secondary hover:bg-surface-hover px-2.5 py-1 text-xs text-text-secondary hover:text-foreground border border-border transition-colors"
+                          title="Browse prompt templates"
                         >
-                          <Send className="h-3.5 w-3.5" />
-                          <span className="hidden sm:inline">Fan Out</span>
+                          <Sparkles className="h-3 w-3 text-text-muted" />
+                          <span className="hidden sm:inline">Templates</span>
                         </button>
-                      )}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {isStreaming ? (
+                          <button
+                            type="button"
+                            onClick={handleStopStream}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-red-600 hover:bg-red-500 text-white shadow-sm transition-all active:scale-95"
+                            title="Stop generating"
+                          >
+                            <StopCircle className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <button
+                            type="submit"
+                            disabled={!promptInput.trim()}
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background hover:opacity-90 disabled:opacity-25 disabled:cursor-not-allowed transition-all shadow-sm active:scale-95"
+                            title="Send prompt (Enter)"
+                          >
+                            <ArrowUp className="h-4 w-4 stroke-[2.5]" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </form>
+                  <p className="mt-2 text-center text-[11px] text-text-muted">
+                    ConcordRouter fans out your prompt to multiple models and aligns divergent outputs. Verify critical facts.
+                  </p>
                 </div>
               </div>
             </main>

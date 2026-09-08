@@ -110,61 +110,61 @@ export const PromptTemplatesModal: React.FC<PromptTemplatesModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-md">
-      <div className="flex w-full max-w-3xl max-h-[85vh] flex-col rounded-2xl bg-[#11141b] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+      <div className="flex w-full max-w-3xl max-h-[85vh] flex-col rounded-2xl bg-surface border border-border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.06] px-6 py-4 bg-[#0e1117]">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-surface-secondary/40">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-              <Sparkles className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface border border-border text-foreground">
+              <Sparkles className="h-4 w-4 text-brand-terracotta" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-white">Prompt Template Library</h2>
-              <p className="text-xs text-slate-400">
-                Curated multi-model prompt benchmarks designed to test divergence and consensus
+              <h2 className="text-sm font-semibold text-foreground">Prompt Template Library</h2>
+              <p className="text-xs text-text-secondary">
+                Curated multi-model benchmarks to evaluate consensus and divergence
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] px-6 py-3 bg-[#0c0f15]">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-2.5 bg-surface-secondary/20">
+          <div className="flex items-center gap-1 overflow-x-auto pb-0.5">
             {categories.map((c) => (
               <button
                 key={c}
                 onClick={() => setActiveCategory(c)}
-                className={`rounded-lg px-2.5 py-1 text-xs capitalize transition-all ${
+                className={`rounded-full px-3 py-1 text-xs capitalize transition-all ${
                   activeCategory === c
-                    ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+                    ? 'bg-foreground text-background font-medium shadow-sm'
+                    : 'text-text-secondary hover:text-foreground hover:bg-surface-hover'
                 }`}
               >
-                {c === 'all' ? 'All Templates' : c}
+                {c === 'all' ? 'All' : c}
               </button>
             ))}
           </div>
 
-          <div className="relative w-48 sm:w-60">
-            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-slate-500" />
+          <div className="relative w-48 sm:w-56">
+            <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-text-muted" />
             <input
               type="text"
               placeholder="Search templates..."
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
-              className="w-full rounded-xl bg-[#13161f] border border-white/[0.08] pl-8 pr-3 py-1 text-xs text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+              className="w-full rounded-xl bg-surface border border-border pl-8 pr-3 py-1 text-xs text-foreground placeholder-text-muted focus:border-border-strong focus:outline-none"
             />
           </div>
         </div>
 
         {/* Template List */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-3.5">
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
           {filteredTemplates.map((tpl, idx) => (
             <div
               key={tpl.id || idx}
@@ -172,24 +172,24 @@ export const PromptTemplatesModal: React.FC<PromptTemplatesModalProps> = ({
                 onSelectTemplate(tpl.prompt, tpl.recommendedModels);
                 onClose();
               }}
-              className="glass-card rounded-2xl p-4 bg-[#141822] border border-white/[0.06] hover:border-amber-500/30 cursor-pointer space-y-2.5 group transition-all"
+              className="rounded-2xl p-4 bg-surface border border-border hover:border-border-strong cursor-pointer space-y-2 group transition-all shadow-card hover:shadow-sm"
             >
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors">
+                <span className="text-xs font-semibold text-foreground group-hover:text-brand-terracotta transition-colors">
                   {tpl.title}
                 </span>
-                <span className="rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-mono text-amber-400 border border-white/[0.06]">
+                <span className="rounded-full bg-surface-secondary px-2 py-0.2 text-[10px] font-mono text-text-secondary border border-border">
                   {tpl.category}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
                 {tpl.description}
               </p>
-              <div className="pt-2 flex items-center justify-between text-[11px] text-amber-400 font-medium border-t border-white/[0.04]">
-                <span className="text-[10px] text-slate-500">
+              <div className="pt-2 flex items-center justify-between text-[11px] text-text-muted font-medium border-t border-border/50">
+                <span className="text-[10px]">
                   Suggested: {tpl.recommendedModels.map((m) => m.model).join(', ')}
                 </span>
-                <span className="flex items-center gap-1 font-semibold group-hover:translate-x-1 transition-transform">
+                <span className="flex items-center gap-1 font-medium text-foreground group-hover:translate-x-0.5 transition-transform">
                   Load into Arena <ArrowRight className="h-3 w-3" />
                 </span>
               </div>
@@ -198,10 +198,10 @@ export const PromptTemplatesModal: React.FC<PromptTemplatesModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end border-t border-white/[0.06] px-6 py-3.5 bg-[#0e1117]">
+        <div className="flex justify-end border-t border-border px-5 py-3 bg-surface-secondary/40">
           <button
             onClick={onClose}
-            className="rounded-xl px-4 py-2 text-xs font-medium text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+            className="rounded-full px-4 py-1.5 text-xs font-medium text-text-secondary hover:bg-surface-hover hover:text-foreground transition-colors"
           >
             Cancel
           </button>
