@@ -37,7 +37,7 @@ import { SecurityView } from '@/components/views/SecurityView';
 import { FaqView } from '@/components/views/FaqView';
 import { AboutView } from '@/components/views/AboutView';
 
-import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History, ArrowUp, Loader2 } from 'lucide-react';
+import { Send, Sparkles, Layers, StopCircle, BookOpen, Download, History, ArrowUp, Loader2, PanelLeft } from 'lucide-react';
 
 export default function ArenaPage() {
   const [currentView, setCurrentView] = useState<AppView>('arena');
@@ -83,6 +83,7 @@ export default function ArenaPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
 
   useEffect(() => {
     const saved = (typeof window !== 'undefined' && localStorage.getItem('concord_theme')) as 'dark' | 'light' | null;
@@ -421,6 +422,7 @@ export default function ArenaPage() {
         onNewChat={handleNewChat}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
       />
 
       {/* Main View Container */}
@@ -440,27 +442,43 @@ export default function ArenaPage() {
           <AboutView />
         ) : (
           /* Arena Workspace View */
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar */}
+          <div className="flex flex-1 overflow-hidden relative">
+            {/* Left Sidebar (Desktop side-by-side + Mobile overlay drawer) */}
             <Sidebar
               threads={threads}
               activeThreadId={activeThreadId}
               providers={providers}
               searchQuery={searchQuery}
               onSearchChange={handleSearch}
-              onSelectThread={handleSelectThread}
-              onNewThread={handleNewChat}
+              onSelectThread={(id) => {
+                handleSelectThread(id);
+                setIsMobileSidebarOpen(false);
+              }}
+              onNewThread={() => {
+                handleNewChat();
+                setIsMobileSidebarOpen(false);
+              }}
               onDeleteThread={handleDeleteThread}
               onOpenSettings={() => setIsSettingsOpen(true)}
               isCollapsed={isSidebarCollapsed}
               onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              isMobileOpen={isMobileSidebarOpen}
+              onMobileClose={() => setIsMobileSidebarOpen(false)}
             />
 
-            {/* Arena Stage */}
-            <main className="flex flex-1 flex-col overflow-hidden bg-background">
+            {/* Arena Stage (Always full-width on mobile, never shrunk by sidebar) */}
+            <main className="flex flex-1 w-full min-w-0 flex-col overflow-hidden bg-background">
               {/* Secondary Sub-Header */}
-              <div className="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-border bg-surface text-xs text-text-secondary">
-                <div className="flex items-center gap-2.5 truncate min-w-0">
+              <div className="flex items-center justify-between px-3 sm:px-6 py-2 border-b border-border bg-surface text-xs text-text-secondary">
+                <div className="flex items-center gap-2 truncate min-w-0">
+                  <button
+                    onClick={() => setIsMobileSidebarOpen(true)}
+                    className="md:hidden flex h-7 w-7 items-center justify-center rounded-lg bg-surface-secondary hover:bg-surface-hover border border-border text-foreground transition-colors shrink-0"
+                    title="Open session history"
+                  >
+                    <PanelLeft className="h-4 w-4" />
+                  </button>
+
                   <span className="font-semibold text-foreground truncate text-xs sm:text-sm">
                     {activeThreadTitle}
                   </span>

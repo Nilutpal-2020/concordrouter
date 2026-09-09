@@ -14,6 +14,7 @@ import {
   Sun,
   Moon,
   ChevronRight,
+  PanelLeft,
 } from 'lucide-react';
 
 export type AppView = 'arena' | 'features' | 'how-it-works' | 'security' | 'faq' | 'about';
@@ -28,6 +29,7 @@ interface NavbarProps {
   onNewChat: () => void;
   theme?: 'dark' | 'light';
   onToggleTheme?: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -40,6 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNewChat,
   theme = 'dark',
   onToggleTheme,
+  onToggleMobileSidebar,
 }) => {
   const connectedCount = providers.filter((p) => p.isConnected).length;
 
@@ -53,22 +56,32 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 px-4 backdrop-blur-md transition-colors lg:px-6">
-      {/* Brand & Logo - Clean Claude / ChatGPT minimalist identity */}
-      <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-background/90 px-3 sm:px-4 backdrop-blur-md transition-colors lg:px-6">
+      {/* Brand & Logo */}
+      <div className="flex items-center gap-2 sm:gap-6">
+        {onToggleMobileSidebar && currentView === 'arena' && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden flex h-8 w-8 items-center justify-center rounded-lg bg-surface-secondary hover:bg-surface-hover border border-border text-foreground transition-colors shrink-0"
+            title="Toggle session history sidebar"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
+        )}
+
         <button
           onClick={() => onNavigate('arena')}
-          className="flex items-center gap-2.5 text-left group"
+          className="flex items-center gap-2 sm:gap-2.5 text-left group"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-secondary border border-border group-hover:border-border-strong transition-all">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-secondary border border-border group-hover:border-border-strong transition-all shrink-0">
             <Layers className="h-4 w-4 text-foreground transition-transform group-hover:scale-105" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="font-semibold text-sm tracking-tight text-foreground">
                 ConcordRouter
               </span>
-              <span className="rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary border border-border">
+              <span className="hidden xs:inline-block rounded-full bg-surface-secondary px-2 py-0.5 text-[10px] font-medium text-text-secondary border border-border">
                 Arena
               </span>
             </div>

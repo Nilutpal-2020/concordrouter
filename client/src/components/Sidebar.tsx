@@ -2,7 +2,17 @@
 
 import React from 'react';
 import { Thread, ProviderStatus } from '@/lib/types';
-import { MessageSquare, Trash2, Plus, Server, Search, CheckCircle2, AlertCircle, X, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import {
+  MessageSquare,
+  Trash2,
+  Plus,
+  Server,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Settings,
+} from 'lucide-react';
 
 interface SidebarProps {
   threads: Thread[];
@@ -16,6 +26,8 @@ interface SidebarProps {
   onOpenSettings: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 function formatRelativeTime(dateStr?: string): string {
@@ -51,59 +63,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   isCollapsed = false,
   onToggleCollapse,
+  isMobileOpen = false,
+  onMobileClose,
 }) => {
-  if (isCollapsed) {
-    return (
-      <aside className="flex h-full w-12 flex-col items-center border-r border-border bg-surface-secondary/30 py-3 text-text-secondary select-none">
-        <button
-          onClick={onToggleCollapse}
-          className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
-          title="Expand sidebar"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        <button
-          onClick={onNewThread}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background hover:opacity-90 transition-all shadow-sm"
-          title="New Session"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
-        <div className="mt-auto">
-          <button
-            onClick={onOpenSettings}
-            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
-            title="Configure Providers"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
-      </aside>
-    );
-  }
+  const handleSelectThread = (threadId: string) => {
+    onSelectThread(threadId);
+    if (onMobileClose) onMobileClose();
+  };
 
-  return (
-    <aside className="flex h-full w-60 lg:w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
-      {/* Top Action Bar: New Session & Collapse */}
-      <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={onNewThread}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface border border-border hover:border-border-strong hover:bg-surface-hover py-2 px-3 text-xs font-medium text-foreground transition-all shadow-sm active:scale-[0.99]"
-        >
-          <Plus className="h-3.5 w-3.5 text-foreground" />
-          <span>New Session</span>
-        </button>
-        {onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-surface-hover text-text-muted hover:text-foreground transition-colors"
-            title="Collapse sidebar"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+  const handleNewThread = () => {
+    onNewThread();
+    if (onMobileClose) onMobileClose();
+  };
 
+  const handleOpenSettings = () => {
+    onOpenSettings();
+    if (onMobileClose) onMobileClose();
+  };
+
+  const renderSidebarBody = () => (
+    <>
       {/* Search Input */}
       <div className="relative mt-1 mb-2">
         <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-text-muted" />
@@ -141,7 +120,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               return (
                 <div
                   key={th.id}
-                  onClick={() => onSelectThread(th.id)}
+                  onClick={() => handleSelectThread(th.id)}
                   className={`group relative flex flex-col rounded-xl px-2.5 py-2 text-xs cursor-pointer transition-all ${
                     isActive
                       ? 'bg-surface text-foreground font-medium shadow-sm border border-border'
@@ -150,7 +129,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 >
                   <div className="flex items-center justify-between gap-1.5 w-full">
                     <div className="flex items-center gap-2 truncate min-w-0">
-                      <MessageSquare className={`h-3.5 w-3.5 shrink-0 ${isActive ? 'text-foreground' : 'text-text-muted'}`} />
+                      <MessageSquare
+                        className={`h-3.5 w-3.5 shrink-0 ${
+                          isActive ? 'text-foreground' : 'text-text-muted'
+                        }`}
+                      />
                       <span className="truncate font-medium leading-snug">{th.title}</span>
                     </div>
 
@@ -175,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </div>
                   </div>
 
-                  {/* First Input / Prompt Snippet (ChatGPT & Claude style) */}
+                  {/* First Input / Prompt Snippet */}
                   {th.firstPrompt && (
                     <div className="mt-1 pl-5 text-[11px] text-text-muted line-clamp-1 truncate leading-tight opacity-75 font-normal">
                       {th.firstPrompt}
@@ -196,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Providers
           </span>
           <button
-            onClick={onOpenSettings}
+            onClick={handleOpenSettings}
             className="text-[10px] text-text-secondary hover:text-foreground font-medium transition-colors"
           >
             Configure
@@ -207,7 +190,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {providers.map((p) => (
             <div
               key={p.id}
-              onClick={onOpenSettings}
+              onClick={handleOpenSettings}
               className="flex items-center justify-between rounded-lg bg-surface hover:bg-surface-hover px-2 py-1.5 text-[11px] text-text-secondary cursor-pointer border border-border transition-colors"
             >
               <span className="truncate capitalize font-mono text-[10px]">{p.id}</span>
@@ -220,6 +203,104 @@ export const Sidebar: React.FC<SidebarProps> = ({
           ))}
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* ------------------------------------------------------------- */}
+      {/* 1. Desktop Sidebar (hidden on mobile, never affects mobile)    */}
+      {/* ------------------------------------------------------------- */}
+      {isCollapsed ? (
+        <aside className="hidden md:flex h-full w-12 flex-col items-center border-r border-border bg-surface-secondary/30 py-3 text-text-secondary select-none transition-all">
+          <button
+            onClick={onToggleCollapse}
+            className="mb-4 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
+            title="Expand sidebar"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <button
+            onClick={onNewThread}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground text-background hover:opacity-90 transition-all shadow-sm"
+            title="New Session"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+          <div className="mt-auto">
+            <button
+              onClick={onOpenSettings}
+              className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-hover text-text-secondary hover:text-foreground transition-all"
+              title="Configure Providers"
+            >
+              <Settings className="h-4 w-4" />
+            </button>
+          </div>
+        </aside>
+      ) : (
+        <aside className="hidden md:flex h-full w-60 lg:w-64 flex-col border-r border-border bg-surface-secondary/30 p-3 text-text-secondary select-none transition-all">
+          {/* Top Action Bar: New Session & Collapse */}
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              onClick={onNewThread}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-surface border border-border hover:border-border-strong hover:bg-surface-hover py-2 px-3 text-xs font-medium text-foreground transition-all shadow-sm active:scale-[0.99]"
+            >
+              <Plus className="h-3.5 w-3.5 text-foreground" />
+              <span>New Session</span>
+            </button>
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="flex h-8 w-8 items-center justify-center rounded-xl hover:bg-surface-hover text-text-muted hover:text-foreground transition-colors"
+                title="Collapse sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          {renderSidebarBody()}
+        </aside>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* 2. Mobile Drawer & Backdrop (Overlay on top of background)    */}
+      {/* ------------------------------------------------------------- */}
+      {isMobileOpen && (
+        <div
+          onClick={onMobileClose}
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-opacity md:hidden animate-fadeIn"
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-72 max-w-[85vw] flex-col border-r border-border bg-surface p-3 text-text-secondary select-none shadow-2xl transition-transform duration-300 ease-out md:hidden ${
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full pointer-events-none'
+        }`}
+      >
+        {/* Mobile Top Action Bar */}
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            onClick={handleNewThread}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-foreground text-background hover:opacity-90 py-2 px-3 text-xs font-medium transition-all shadow-sm active:scale-[0.99]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Session</span>
+          </button>
+          {onMobileClose && (
+            <button
+              onClick={onMobileClose}
+              className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-secondary hover:bg-surface-hover border border-border text-text-muted hover:text-foreground transition-colors"
+              title="Close sidebar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {renderSidebarBody()}
+      </aside>
+    </>
   );
 };
