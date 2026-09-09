@@ -11,6 +11,8 @@ import {
   ArrowRight,
   GitMerge,
   CheckCircle2,
+  Activity,
+  Wand2,
 } from 'lucide-react';
 
 interface FeaturesViewProps {
@@ -29,6 +31,14 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({ onOpenArena, onOpenS
       highlight: 'Slow providers will never stall or block other response panes.',
     },
     {
+      icon: <Activity className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
+      title: 'Live Word-by-Word SSE Streaming',
+      badge: 'Streaming SSE',
+      description:
+        'High-fidelity Server-Sent Events stream incremental token deltas directly into GFM Markdown renderers with pulsing activity dots, word counters, and isolated per-pane retry.',
+      highlight: 'Instant time-to-first-token across all concurrent models.',
+    },
+    {
       icon: <Split className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
       title: 'Needleman-Wunsch Semantic Alignment',
       badge: 'Sequence Math',
@@ -41,7 +51,7 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({ onOpenArena, onOpenS
       title: 'Pairwise Heatmap Matrix Analytics',
       badge: 'Visual Matrix',
       description:
-        'Interactive M × N similarity matrix. Hover over cells to reveal cosine similarity percentages (0–100%) and instant comparison drawers between any two paragraph chunks.',
+        'Interactive M × N similarity matrix with smooth color gradients. Hover over cells to reveal cosine similarity percentages (0–100%) and instant comparison drawers between any two paragraph chunks.',
       highlight: 'Inspect consensus overlap and point-by-point divergence at a glance.',
     },
     {
@@ -61,12 +71,28 @@ export const FeaturesView: React.FC<FeaturesViewProps> = ({ onOpenArena, onOpenS
       highlight: 'Clearly badged as an AI-generated draft to uphold trust boundaries.',
     },
     {
+      icon: <Wand2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />,
+      title: 'Statistical AI-Detectability Reduction (Humanizer)',
+      badge: 'NLP Post-Process',
+      description:
+        'Post-processes synthesized drafts by perturbing statistical signatures without a secondary LLM: injects burstiness variance (sentence length variance), purges tell-words (delve, testament, moreover), and balances readability.',
+      highlight: 'Moves statistical perplexity & burstiness toward human baseline distributions.',
+    },
+    {
       icon: <ShieldCheck className="h-5 w-5 text-brand-terracotta" />,
       title: 'BYOA (Bring Your Own Account) Vault',
       badge: 'AES-256-GCM',
       description:
         'Your API keys are encrypted at rest with local symmetric AES-256-GCM. Requests connect directly to official upstream endpoints with zero third-party proxy markup or logging.',
       highlight: 'Zero token markup, zero server query retention, pure sovereignty.',
+    },
+    {
+      icon: <Sparkles className="h-5 w-5 text-brand-terracotta" />,
+      title: 'ChatGPT & Claude Dual-Theme System',
+      badge: 'Ergonomic UI',
+      description:
+        'Switch seamlessly between ChatGPT-style dark zinc aesthetic and Claude-style warm stone/linen light mode, featuring streamlined prompt composer and first-prompt session history.',
+      highlight: 'Crafted for hours of uninterrupted comparative evaluation.',
     },
   ];
 

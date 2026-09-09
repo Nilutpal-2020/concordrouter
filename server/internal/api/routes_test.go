@@ -72,4 +72,37 @@ func TestAPISearchAndExport(t *testing.T) {
 	if !strings.Contains(bodyStr, "Golang Concurrency Patterns") || !strings.Contains(bodyStr, "select statement") {
 		t.Fatalf("Export Markdown missing expected content: %s", bodyStr)
 	}
+
+	// 3. Test Merge Humanize Endpoint
+	humanizePayload := `{"text": "Moreover, it is important to note that this serves as a testament to the landscape. Furthermore, we must delve into the multifaceted implications."}`
+	reqHumanize := httptest.NewRequest("POST", "/api/v1/merge/humanize", strings.NewReader(humanizePayload))
+	reqHumanize.Header.Set("Content-Type", "application/json")
+	rrHumanize := httptest.NewRecorder()
+	srv.Router().ServeHTTP(rrHumanize, reqHumanize)
+
+	if rrHumanize.Code != http.StatusOK {
+		t.Fatalf("Humanize failed with status %d: %s", rrHumanize.Code, rrHumanize.Body.String())
+	}
+
+	var humanizeResp struct {
+		OriginalText  string `json:"originalText"`
+		HumanizedText string `json:"humanizedText"`
+		Stats         struct {
+			OriginalBurstiness  float64  `json:"originalBurstiness"`
+			HumanizedBurstiness float64  `json:"humanizedBurstiness"`
+			ReplacementsCount   int      `json:"replacementsCount"`
+			ReplacedTells       []string `json:"replacedTells"`
+		} `json:"stats"`
+	}
+	if err := json.NewDecoder(rrHumanize.Body).Decode(&humanizeResp); err != nil {
+		t.Fatalf("Failed to decode humanize response: %v", err)
+	}
+
+	if humanizeResp.Stats.ReplacementsCount == 0 {
+		t.Errorf("Expected replacements in humanize test, got 0")
+	}
+	if len(humanizeResp.Stats.ReplacedTells) == 0 {
+		t.Errorf("Expected tell replacements recorded")
+	}
 }
+

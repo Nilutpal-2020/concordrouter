@@ -1,288 +1,360 @@
-# CLAUDE.md — Multi-Model Prompt Arena
+# CLAUDE.md — ConcordRouter: Multi-Model Prompt Arena
 
-Guidance for Claude Code when working in this repository. This project is a web app where a
-user writes one prompt/chat message and it fans out to multiple LLM providers
-(OpenAI, Anthropic, Google, local/OSS models via Ollama, etc.), shows the responses side by
-side, and lets the user "merge" two or more responses into a single reconciled answer
-(git-merge-style).
+Guidance for Claude Code (and other AI assistants) when working in this repository.
+ConcordRouter is a self-hosted, privacy-first web application that fans out a single
+prompt to multiple LLM providers concurrently, streams responses in real time, and
+provides semantic diffing and consensus synthesis tooling to reconcile divergent answers.
 
 ---
 
 ## 1. Product Summary
 
 - User composes a prompt (or continues a chat thread).
-- User selects 2+ target models/agents.
-- Request fans out concurrently; each response streams into its own pane.
-- User can diff any two responses and produce a merged output by accepting/rejecting
-  chunks, or by asking an LLM to synthesize a merge.
-- Merged output can be saved, re-submitted as a new turn, or exported.
+- User selects 2+ target models/agents from connected providers.
+- Request fans out concurrently via goroutine channels; each response streams
+  independently into its own arena pane via Server-Sent Events (SSE).
+- Real-time markdown rendering with streaming cursor, token counters, latency
+  timers, and throughput metrics ($T/s$) per pane.
+- User can diff any two responses using Needleman-Wunsch semantic alignment,
+  cherry-pick chunks from either side, or request AI-assisted consensus synthesis.
+- Merged output can be saved, re-submitted as a new turn, or exported (Markdown/JSON).
 
 ## 2. Non-Goals (v1)
 
 - No fine-tuning, no agent/tool-use orchestration across providers, no multi-user
   real-time collaboration (single-user sessions only), no mobile app (responsive web only).
 
-## 3. Suggested Architecture
+## 3. Architecture (Implemented)
 
 ```
-┌─────────────┐      ┌───────────────────┐      ┌─────────────────────┐
-│   Frontend   │◄────►│   API Gateway /    │◄────►│  Provider Adapters   │
-│  (Next.js /  │ SSE  │   Orchestrator     │      │  (OpenAI, Anthropic, │
-│   React)     │      │  (Go service)      │      │   Gemini, Ollama...) │
-└─────────────┘      └─────────┬─────────┘      └─────────────────────┘
-                                │
-                     ┌──────────┴──────────┐
-                     │  Postgres (threads,  │
-                     │  messages, merges)   │
-                     │  + Redis (streaming  │
-                     │  fan-out, rate       │
-                     │  limit state)        │
-                     └─────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│                         Next.js 14 Frontend (:3000)                      │
+│  - Universal App Nav (Arena, Features, How It Works, Security, FAQ)       │
+│  - Dynamic Arena (Grid, Focus/Tabs, Stacked + Typography S/M/L)          │
+│  - Prompt Composer with Template Library & Streaming Context              │
+│  - 3-Tab Merge Workbench (Semantic Diff, Chunk Picker, AI Synthesis)     │
+│  - Collapsible Sidebar with Search & First-Prompt History Previews       │
+│  - Dark/Light Theme (ChatGPT zinc / Claude warm linen aesthetics)        │
+│  - MarkdownRenderer with GFM, code blocks, tables, streaming cursor      │
+└────────────────────────────────────┬─────────────────────────────────────┘
+                                     │ SSE / JSON REST
+┌────────────────────────────────────▼─────────────────────────────────────┐
+│                     Go Backend Service (:8080)                            │
+│  ┌────────────────────────────────────────────────────────────────────┐  │
+│  │ HTTP Router (Chi v5 + CORS + SSE Broker)                           │  │
+│  │ - /api/v1/threads, /turns, /retry, /export, /search               │  │
+│  │ - /api/v1/merge/gate, /merge/align, /merge/synthesize             │  │
+│  │ - /api/v1/providers, /providers/keys                               │  │
+│  │ - /api/v1/segment, /threads/{id}/merge, /threads/{id}/merges      │  │
+│  │ - /api/v1/health                                                   │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Concurrency Fan-Out Orchestrator                                   │  │
+│  │ - Goroutine Fan-Out with Isolated Child Contexts                   │  │
+│  │ - Non-blocking Multiplexed SSE Streaming Channels                  │  │
+│  │ - Single-Pane Resilient Error Handling & Retries                   │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Needleman-Wunsch Alignment & Similarity Engine (internal/merge/)   │  │
+│  │ - Bigram & 3-Gram Shingle Tokenization & Cosine Matrix            │  │
+│  │ - Global Sequence Alignment for Prose (not line-based Myers diff)  │  │
+│  │ - Automated Gating Heuristics & Consensus Badging                 │  │
+│  └─────────────────────────────────┬──────────────────────────────────┘  │
+│  ┌─────────────────────────────────▼──────────────────────────────────┐  │
+│  │ Provider Adapters (internal/providers/*)                           │  │
+│  │ OpenAI · Anthropic · Gemini · Ollama · OpenRouter · Mock          │  │
+│  └────────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────┬─────────────────────────────────────┘
+┌────────────────────────────────────▼─────────────────────────────────────┐
+│                          Persistence Layer                               │
+│  SQLite (WAL Mode, Zero-CGo via modernc.org/sqlite, Auto-Migrations)     │
+│  AES-256-GCM Envelope Encryption for Provider API Credentials            │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Backend**: Go, since it handles concurrent streaming fan-out cleanly with goroutines +
-channels, and each provider adapter is a small, well-isolated interface implementation
-(`Provider.Stream(ctx, req) <-chan Chunk`). Use SSE or WebSockets to push each provider's
-stream to the browser independently so panes update at their own pace.
+**Backend**: Go with Chi v5 router. Concurrent streaming fan-out via goroutines + channels.
+Each provider adapter implements `Provider.Stream(ctx, req) <-chan Chunk`. SSE pushes each
+provider's stream to the browser independently so panes update at their own pace.
 
-**Auth model: bring-your-own-account (BYOA), not platform-managed keys.** The app never
-holds provider billing/quota — each user connects their own OpenAI/Anthropic/Google/etc.
-account and the app uses *their* credentials for every call. This removes platform-side
-cost and rate-limit management, but shifts complexity into per-provider auth handling —
-see §4a, this is not a uniform "just store a token" problem.
+**Frontend**: Next.js 14 (App Router) with Tailwind CSS. Each response pane is an independent
+SSE streaming consumer with live markdown rendering. Dual-theme design system (ChatGPT-style
+dark zinc / Claude-style warm linen light mode).
 
-**Frontend**: React/Next.js. Each response pane is an independent streaming consumer;
-don't block one pane's render on another's completion.
+**Data layer**: SQLite in WAL mode (zero-CGo via `modernc.org/sqlite`) for threads, messages,
+provider responses, and merge records. No Redis or Postgres required.
 
-**Data layer**: Postgres for threads/messages/provider-responses/merge-records. Redis for
-ephemeral streaming/session state and per-provider rate-limit token buckets.
+## 4. Provider Adapter Interface
 
-**Provider adapter interface** (illustrative):
 ```go
 type Provider interface {
+    ID() ProviderID
     Name() string
-    Stream(ctx context.Context, req ChatRequest) (<-chan Chunk, error)
-    EstimateCost(req ChatRequest) Cost
+    AuthMode() AuthMode
+    SupportedModels() []ModelInfo
+    ValidateKey(ctx context.Context, apiKey string, customURL string) error
+    EstimateCost(req ChatRequest) CostEstimate
+    Stream(ctx context.Context, req ChatRequest) (<-chan StreamChunk, error)
 }
 ```
-Every provider (OpenAI, Anthropic, Gemini, Ollama, OpenRouter as a meta-provider) implements
-this. Add new providers by adding an adapter — nothing else in the system should know
-provider-specific details.
 
-## 4a. BYOA (Bring Your Own Account) — Critical Notes
+### Implemented Providers (6)
 
-"Use their own account token" means different things per provider, and the difference is
-the single biggest feasibility risk in this project:
+| Provider | Auth | Models | Status |
+|---|---|---|---|
+| **OpenAI** | `api_key` | GPT-4o, GPT-4o Mini, o3-mini | ✅ Implemented |
+| **Anthropic** | `api_key` | Claude 3.7 Sonnet, 3.5 Sonnet, 3.5 Haiku | ✅ Implemented |
+| **Google Gemini** | `api_key` | Gemini 2.5 Flash, 2.5 Pro | ✅ Implemented |
+| **Ollama** | `none` | Llama 3.2, DeepSeek R1, Mistral 7B | ✅ Implemented |
+| **OpenRouter** | `api_key` | DeepSeek R1, Llama 3.3 70B, Claude 3.7 Sonnet | ✅ Implemented |
+| **Mock** | `none` | mock-concise, mock-verbose, mock-creative | ✅ Built-in |
 
-- **Anthropic / OpenAI / Google — API keys**: these are official, sanctioned, metered
-  separately from any chat-app subscription (a ChatGPT Plus or Claude Pro subscription
-  does **not** include API access or API quota — it's a different product with different
-  billing). If "their own account" means "their own API key," this is clean: standard
-  OAuth-less flow, user pastes a key, app stores it encrypted, app calls the official API
-  as them. Rate limits and cost are entirely theirs. This is the supported, low-risk path.
-- **"Their ChatGPT/Claude.ai web login" — session/cookie auth**: if the intent is to use
-  the consumer subscription itself (so a Plus/Pro user doesn't need a separate paid API
-  key), this means driving the unofficial web session (cookies/browser tokens), which is
-  **not an authorized integration path** for most providers, breaks on any frontend change,
-  and is against most providers' Terms of Service to automate. Treat this as out of scope
-  unless a provider explicitly ships an OAuth/consumer-grant flow for it (a few products,
-  e.g. some IDE plugins, have official "sign in with your Pro/Max plan" OAuth flows —
-  check current docs per provider before assuming this exists).
-- **OAuth-based providers**: where a provider does offer real OAuth (delegated, scoped,
-  revocable), prefer that over any key-paste flow — better security posture, user can
-  revoke without rotating a raw secret.
+Each adapter lives in `internal/providers/<name>/` and implements the full streaming interface.
+The Mock provider sends word-by-word tokenized markdown for realistic streaming demos
+without any API keys.
 
-**Design implication**: the "Provider" adapter interface needs an explicit `AuthMode`
-(`api_key` | `oauth` | `unsupported`) per provider, and the product should be honest in the
-UI about which providers are supported via sanctioned auth and which aren't — don't quietly
-build on session-scraping for a subset of providers, since that's a stability and ToS
-liability that will silently break the product later.
+## 5. BYOA (Bring Your Own Account)
 
-## 4. The Merge Feature — Design Notes
+**Auth model: bring-your-own-account, not platform-managed keys.** The app never holds
+provider billing/quota — each user connects their own API credentials and the app uses
+*their* keys for every call.
 
-This is the hardest and most novel part of the product. Natural-language responses are not
-line-oriented artifacts like source code, so a literal `git merge` port will feel wrong. Build
-it in layers, cheapest first:
+- **API keys** (OpenAI, Anthropic, Gemini, OpenRouter): User pastes a key via the Settings
+  modal, app validates it with a cheap test call, stores it encrypted (AES-256-GCM), and
+  displays only a masked preview (e.g., `sk-pro...JMQA`).
+- **No-auth providers** (Ollama, Mock): Connect automatically, no credentials needed.
+- **Provider adapter interface** includes explicit `AuthMode` (`api_key` | `none`) per
+  provider, surfaced honestly in the UI.
 
-1. **Manual block-select merge (v1, ship first)**: Segment each response into paragraphs/
-   sentences. Render two/three columns. User clicks chunks from either side to build a third
-   "merged draft" pane (like picking commits with cherry-pick, not auto-diffing prose).
-2. **Structured diff view (v2)**: Sentence-level diff (Myers diff on tokenized sentences,
-   not characters) to highlight overlapping vs. divergent content between two responses,
-   with accept-left / accept-right / accept-both controls per diff hunk — modeled on a
-   three-way merge tool's conflict markers, but softened for prose (no "conflict" framing,
-   just "these differ").
-3. **AI-assisted synthesis merge (v3)**: Send both full responses back to an LLM with a
-   system prompt like "reconcile these two answers into one, preserving unique correct
-   content from each, flagging contradictions" — this is not a mechanical merge, it's a new
-   generation, and should be presented to the user as such (editable draft, not authoritative).
+## 6. SSE Streaming Protocol
 
-Do not conflate (2) and (3) in the UI — a deterministic diff-based merge and an
-LLM-generated synthesis are different operations with different trust levels, and users
-need to know which one they're looking at.
+The fan-out streaming uses Server-Sent Events with typed events:
 
-## 4b. When to Offer Merge, and Semantic Diff Tooling
+```
+event: init
+data: {"prompt":"...", "turnId":"turn_...", "type":"turn_init"}
 
-**Gating heuristic** — don't show the merge affordance on every turn:
-- Skip merge UI when both responses are below a length threshold (e.g. <~30 tokens) —
-  short/chit-chat turns ("Hi", "thanks") have nothing to reconcile.
-- Skip (or auto-collapse to "responses are essentially the same") when whole-response
-  embedding cosine similarity is above a high threshold (e.g. >0.92) — near-duplicate
-  answers don't need a merge tool, just a "they agree" badge.
-- Show it once responses are long enough *and* diverge enough to plausibly contain
-  non-overlapping content.
+event: chunk
+data: {"providerId":"mock", "model":"mock-concise", "delta":"Hello", "fullText":"Hello", "tokens":1, "done":false, "timestamp":"..."}
 
-**The core technical insight**: naive diff (Myers/`difflib`, git's algorithm) assumes exact
-token/line equality, which fails on paraphrase — two paragraphs saying the same thing in
-different words look "different" to a literal diff. The real pipeline is two steps, not one:
+event: chunk
+data: {"providerId":"mock", "model":"mock-concise", "delta":" world", "fullText":"Hello world", "tokens":2, "done":false, "timestamp":"..."}
 
-1. **Semantic alignment** — before diffing, decide *which* paragraph/sentence in response A
-   corresponds to which in response B. This is a sequence-alignment problem (Needleman-Wunsch
-   / Smith-Waterman) using semantic similarity as the substitution score instead of exact
-   character match — i.e., align by meaning, not by position.
-2. **Classify each aligned pair** — same claim / paraphrase / contradiction / one-sided
-   (unique to A or B) — then render *that* as the diff, not a raw text diff.
+event: complete
+data: {"type":"complete"}
+```
 
-**Tooling that already exists for this — no model training required:**
-- **Sentence embeddings** (e.g. `sentence-transformers`, models like `all-MiniLM-L6-v2` or
-  `bge-small`) — fast, run locally/CPU, give a cosine-similarity score (0–1) between any two
-  sentences/paragraphs. This is the "score on how different two sentences are."
-- **NLI / entailment-contradiction models** (e.g. `roberta-large-mnli`,
-  `cross-encoder/nli-deberta-v3-base`) — give a 3-way label (entailment / neutral /
-  contradiction) per sentence pair, which is more useful for merging than similarity alone:
-  a high-similarity-but-contradiction pair is exactly the case a user needs flagged, while a
-  low-similarity-but-neutral pair is just "unrelated, both can stay."
-- **BERTScore** — another off-the-shelf metric for paraphrase-aware similarity if embeddings
-  alone feel too coarse.
-- Combine similarity + NLI into one label per aligned chunk (e.g. "agree," "paraphrase,"
-  "conflict," "unique-to-A/B") — that label, not a raw number, is what should render in the UI.
+Client-side SSE parsing handles `\r?\n` line endings robustly and processes `delta`
+(incremental) and `fullText` (cumulative) fields for real-time state updates.
 
-**UI surface for this**: a paragraph × paragraph similarity matrix (heatmap) between the two
-responses, hover-to-reveal the score/label on any cell, and the aligned pairs drive the
-color-coding in the diff/merge pane (e.g. green = agree, amber = paraphrase, red = conflict,
-gray = one-sided). This is a genuinely useful, buildable feature — it's applying existing
-pretrained NLP models, not a research problem.
+## 7. The Merge Feature — Implementation Status
 
-**Feasibility/timeline**: this tier is normal engineering effort using off-the-shelf
-pretrained models (via a small local inference service or a hosted embeddings API) — no
-custom model training needed. Realistic to build after the manual cherry-pick merge (§4,
-tier 1) and before or alongside the AI-synthesis tier (§4, tier 3); it's the natural
-implementation of §4's tier 2 ("sentence-level diff").
+### ✅ Tier 1: Cherry-Pick Merge (Implemented)
+- Paragraph/sentence segmentation via `/api/v1/segment`.
+- Hunk-by-hunk cherry-pick workbench with Accept Left (A), Accept Right (B),
+  Accept Both (A + B) per aligned hunk.
+- Save merged draft as its own record in the thread.
 
-## 5. Key Engineering Concerns
+### ✅ Tier 2: Semantic Diff / Alignment (Implemented)
+- Needleman-Wunsch global sequence alignment using cosine similarity as substitution
+  scores (not line-based Myers diff).
+- Bigram & 3-gram shingle tokenization for similarity computation.
+- Pairwise $M × N$ similarity heatmap with color-coded cells (green high / red low)
+  and hover-to-reveal cosine scores.
+- Alignment diff view with color-coded hunks.
 
-- **Concurrent streaming**: use `context.Context` cancellation so stopping one pane doesn't
+### ✅ Tier 3: AI-Assisted Synthesis (Implemented)
+- "Synthesize" action sends both responses + alignment context to a chosen model
+  with structured reconciliation prompts via SSE streaming.
+- Result renders as an editable draft, visually distinct from mechanical merge.
+
+### ✅ Merge Gating Heuristics (Implemented)
+- Whole-response embedding similarity check for consensus detection.
+- Length-based skip for short/trivial turns.
+- "Responses agree" badge with similarity percentage for near-duplicates.
+- Merge UI only appears when responses are long enough *and* diverge enough.
+
+### ✅ Post-Processing Stage: Statistical Humanize & AI-Detectability Reduction (Implemented)
+- Route: `/api/v1/merge/humanize` running on finalized merged drafts before saving or exporting.
+- Non-generative deterministic statistical perturbation without requiring a secondary LLM call.
+- **Burstiness injection**: analyzes sentence length distribution $(\mu, \sigma)$ and burstiness coefficient $B = (\sigma - \mu)/(\sigma + \mu)$; perturbs variance by splitting long uniform sentences ($>30$ words) and joining adjacent short clauses ($<6$ words).
+- **Lexical de-patterning**: regex + POS-gated replacement of overused AI markers (*delve, testament, tapestry, landscape, pivotal, moreover, furthermore, it is important to note*, em-dash chains).
+- **N-gram repetition smoothing**: detects repeated rhetorical skeletons across paragraphs and varies subsequent occurrences.
+- **Markov n-gram perplexity & readability targeting**: Flesch-Kincaid Grade Level and Gunning-Fog index scoring.
+- **Post-transform grammar validation**: automatic casing, spacing, and duplicate functional word cleanup.
+- Pure-Go core in `server/internal/humanize/` (zero CGo) with optional sidecar interface for spaCy / LanguageTool.
+- Interactive workbench UI in `MergeWorkbench.tsx` with live before/after burstiness deltas, purged tell badges, and one-click revert.
+
+## 8. Frontend Components
+
+| Component | Description |
+|---|---|
+| `page.tsx` | Main arena orchestrator: state management, streaming handlers, layout |
+| `ArenaPanes.tsx` | Dynamic arena grid (Grid/Focus/Stacked), response cards, streaming UI |
+| `MarkdownRenderer.tsx` | GFM markdown rendering with code blocks, tables, streaming cursor |
+| `Sidebar.tsx` | Collapsible session history with search and first-prompt previews |
+| `Navbar.tsx` | Universal navigation (Arena, Features, How It Works, Security, FAQ, About) |
+| `MergeWorkbench.tsx` | 3-tab merge: Semantic Diff, Chunk Picker, AI Synthesis |
+| `SimilarityHeatmap.tsx` | Pairwise $M × N$ cosine similarity matrix with color-coded cells |
+| `AlignmentDiffView.tsx` | Needleman-Wunsch aligned paragraph diff viewer |
+| `ProviderSettingsModal.tsx` | BYOA credential management (add/remove/validate API keys) |
+| `ModelSelectorModal.tsx` | Multi-model selection across all connected providers |
+| `ExportModal.tsx` | Export sessions as Markdown or JSON |
+| `MergeHistoryModal.tsx` | Browse and restore previous merge records |
+| `PromptTemplatesModal.tsx` | Curated prompt template library |
+
+### View Pages
+`FeaturesView`, `HowItWorksView`, `SecurityView`, `FaqView`, `AboutView` —
+informational pages accessible from the universal navbar.
+
+## 9. Design System & Theme
+
+Dual-theme CSS custom properties design system:
+
+- **Dark mode**: ChatGPT-style neutral graphite/zinc aesthetic (`#171717` background,
+  `#212121` surfaces, `#ececec` text).
+- **Light mode**: Claude-style warm stone/linen aesthetic (`#faf9f5` background,
+  `#ffffff` surfaces, `#1f1e1d` text).
+- **Accent colors**: Terracotta (`#cc785c`), Emerald (`#10a37f`), Amber (`#d97706`),
+  Blue (`#2563eb`).
+- **Provider dot colors**: Each provider has a unique color dot in the arena panes.
+- **Typography**: System font stack (`-apple-system, BlinkMacSystemFont, Segoe UI, Roboto`).
+- **Streaming UI**: Green pulsing dot, elapsed timer, token count, skeleton loading states.
+
+## 10. Key Engineering Decisions
+
+- **Concurrent streaming**: `context.Context` cancellation so stopping one pane doesn't
   kill the others; a slow/failed provider must not block the rest.
-- **Cost/rate limits**: none of this is the platform's problem to manage — each user's
-  own key/account absorbs their own usage and limits. The app should still surface
-  provider-reported errors (429s, quota-exceeded) clearly per pane rather than swallowing
-  them, since the user will need to act on their own account, not the platform's.
-- **Credential storage**: encrypted at rest (e.g. envelope encryption via KMS), scoped so
-  a compromised app database doesn't hand out plaintext API keys; support per-user key
-  rotation/revocation without downtime.
-- **Provider ToS**: automating a consumer web session (vs. an official API key/OAuth grant)
-  is the main legal/stability risk here — see §4a. Confirm sanctioned auth exists before
-  committing to a provider.
-- **Latency variance**: providers finish at very different speeds; design the UI so a slow
-  pane doesn't make the whole screen feel broken (skeleton states per pane).
-- **Idempotency & retries**: a dropped connection mid-stream shouldn't force a full re-run
-  across all providers, only the failed one.
+- **SSE over WebSockets**: Simpler unidirectional streaming; reconnection is handled
+  client-side with abort controllers.
+- **SQLite over Postgres**: Zero-dependency local-first persistence. WAL mode for
+  concurrent read/write. No Docker required for development.
+- **Mock provider**: Built-in word-by-word tokenized streaming with markdown content
+  (tables, code blocks, headers) for testing without API keys.
+- **Per-pane retry**: Re-run only the failed provider, not the whole turn.
+- **Credential storage**: AES-256-GCM encrypted at rest with unique nonces. Masked
+  previews only returned to the client.
 
-## 6. Phased Build Plan
+## 11. API Endpoints (Complete)
 
-Each phase should be independently shippable/demoable — don't start a phase until the
-previous one works end-to-end with a real provider, not mocks.
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/health` | Health check with timestamp |
+| `GET` | `/api/v1/providers` | List providers, statuses, and available models |
+| `POST` | `/api/v1/providers/keys` | Save & validate encrypted provider API key |
+| `DELETE` | `/api/v1/providers/keys/{providerId}` | Disconnect provider key |
+| `GET` | `/api/v1/threads` | List all saved arena threads |
+| `POST` | `/api/v1/threads` | Create a new arena thread |
+| `GET` | `/api/v1/threads/{id}` | Get thread details with turns and merges |
+| `DELETE` | `/api/v1/threads/{id}` | Delete a thread |
+| `GET` | `/api/v1/threads/search?q={query}` | Full-text search across threads |
+| `GET` | `/api/v1/threads/{id}/export` | Export session (Markdown or JSON) |
+| `POST` | `/api/v1/threads/{id}/turns` | **SSE Stream**: Concurrent fan-out to models |
+| `POST` | `/api/v1/threads/{id}/retry` | **SSE Stream**: Single-pane isolated retry |
+| `POST` | `/api/v1/segment` | Segment text into paragraphs/sentences |
+| `POST` | `/api/v1/merge/gate` | Evaluate gating heuristics (length + similarity) |
+| `POST` | `/api/v1/merge/align` | Compute Needleman-Wunsch alignment & similarity matrix |
+| `POST` | `/api/v1/merge/synthesize` | **SSE Stream**: AI consensus reconciliation |
+| `POST` | `/api/v1/merge/humanize` | Statistical AI-detectability reduction & burstiness injection |
+| `POST` | `/api/v1/threads/{id}/merge` | Save merge record |
+| `GET` | `/api/v1/threads/{id}/merges` | List merge history for a thread |
 
-### Phase 0 — Foundations (no user-visible merge/fan-out yet)
-- Repo scaffold: Go backend (`cmd/`, `internal/`), Next.js frontend, Postgres + Redis via
-  docker-compose for local dev.
-- Auth/session for the app itself (the user's account *on this app*, separate from their
-  provider credentials).
-- One provider adapter only (pick Anthropic or OpenAI) implementing `Provider.Stream`.
-- Single-pane chat: compose prompt → stream response → persist thread/messages in Postgres.
-- **Exit criteria**: a user can have a real streaming conversation with one provider,
-  end-to-end, with history persisted and reloadable.
+## 12. Testing
 
-### Phase 1 — BYOA Credential Management
-- Credential storage: encrypted-at-rest API key entry per provider (§4a `api_key` mode
-  only — defer anything OAuth-based).
-- Settings UI: connect/disconnect/rotate a provider key; validate key on save (cheap
-  test call) so bad keys fail immediately, not mid-conversation.
-- Per-provider error surfacing (invalid key, quota exceeded, network) as distinct UI states.
-- **Exit criteria**: a user can connect 2+ providers with their own keys and switch which
-  one handles a single-pane conversation.
+```bash
+# Run all Go tests & Next.js production build
+make test && make build
+```
 
-### Phase 2 — Multi-Provider Fan-Out
-- Extend the orchestrator to send one prompt to N connected providers concurrently.
-- Side-by-side panes, each an independent SSE/WebSocket stream; one provider failing or
-  being slow must not block the others (§5 concurrency/idempotency concerns apply here).
-- Per-pane retry (re-run only the failed provider, not the whole turn).
-- **Exit criteria**: a user selects 2–3 providers, sends one prompt, watches independent
-  streaming responses render side by side, and can retry a single failed pane.
+- Provider adapters: unit tests with recorded fixture responses (cassette-style).
+- Mock provider: `mock_test.go` verifies tokenized streaming output.
+- Merge logic: tests in `internal/merge/` for alignment, similarity, and gating.
+- Streaming: integration tests using the Mock provider with controllable chunk timing.
+- Orchestrator: tests in `internal/orchestrator/` for fan-out concurrency.
+- Crypto: tests in `internal/crypto/` for AES-256-GCM encrypt/decrypt round-trips.
 
-### Phase 3 — Manual Cherry-Pick Merge (§4 tier 1)
-- Paragraph/sentence segmentation of each response.
-- Three-pane UI: response A, response B, merged draft; click-to-add chunks from either
-  side into the draft; freeform edit of the draft afterward.
-- Save merged draft as its own message in the thread; allow re-submitting it as the next
-  prompt.
-- **Exit criteria**: a user can build a merged answer by hand from two responses and
-  continue the conversation from it. This is the first release of the "merge" feature —
-  ship it before any diff/ML tooling.
+## 13. Development
 
-### Phase 4 — Merge Gating Heuristics (§4b)
-- Whole-response embedding similarity check (local `sentence-transformers` model or a
-  hosted embeddings endpoint) to decide whether to show the merge affordance at all.
-- Length-based skip for short/chit-chat turns.
-- "Responses agree" badge for the near-duplicate case instead of the merge UI.
-- **Exit criteria**: merge UI only appears when it's plausibly useful; trivial prompts
-  ("Hi") never show it.
+```bash
+# Start both services (Go :8080 + Next.js :3000)
+make dev
 
-### Phase 5 — Semantic Diff / Alignment (§4b, §4 tier 2)
-- Sentence-level embedding similarity matrix between the two responses.
-- Semantic alignment (Needleman-Wunsch style, similarity as substitution score) to pair
-  up corresponding chunks across responses.
-- NLI model pass (entailment/neutral/contradiction) on aligned pairs to produce labels,
-  not just scores.
-- Heatmap UI with hover-to-reveal score/label; color-coded diff pane (agree/paraphrase/
-  conflict/unique) layered on top of the Phase 3 cherry-pick UI (accept-left/accept-right
-  per aligned chunk, in addition to freeform pick).
-- **Exit criteria**: a user sees *why* two responses differ (paraphrase vs. real conflict),
-  not just that they differ, and can accept/reject at the chunk level.
+# If ports are occupied
+lsof -ti :3000,:8080 | xargs kill -9
 
-### Phase 6 — AI-Assisted Synthesis Merge (§4 tier 3)
-- "Synthesize" action sends both full responses (optionally + the alignment/conflict
-  labels from Phase 5 as context) to a chosen model with an explicit reconciliation prompt.
-- Result renders as an editable draft, visually distinct from the deterministic Phase 3/5
-  merge output (§4's trust-level distinction) — label it clearly as AI-generated, not
-  computed.
-- **Exit criteria**: a user can request a synthesized merge and gets a draft they
-  understand is a new generation, not a mechanical combination.
+# Run Go server only
+cd server && go run cmd/server/main.go
 
-### Phase 7 — Polish / Expand
-- More providers (Google, Ollama/local models, OpenRouter as meta-provider).
-- OAuth-based auth for any provider that sanctions it (§4a) — additive, not required.
-- Export (markdown/PDF), thread search, merged-answer history/versioning.
-- Testing hardening per §7 across all phases if not already continuous.
+# Run Next.js client only
+cd client && npm run dev
+```
 
-Do not reorder phases 3 → 5 → 6 (cherry-pick → semantic diff → AI synthesis) — each is a
-strict superset of trust and complexity over the last, and shipping synthesis (6) before
-manual merge (3) exists would mean shipping the least trustworthy version of the feature
-first.
+## 14. Project Layout
 
-## 7. Testing Conventions
+```
+concordrouter/
+├── client/                          # Next.js 14 frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── page.tsx             # Main arena page (state, streaming, layout)
+│   │   │   ├── globals.css          # Design system tokens (dark/light themes)
+│   │   │   └── layout.tsx           # Root layout with metadata
+│   │   ├── components/
+│   │   │   ├── ArenaPanes.tsx       # Arena grid, response cards, streaming UI
+│   │   │   ├── MarkdownRenderer.tsx # GFM markdown with code blocks & tables
+│   │   │   ├── Sidebar.tsx          # Session history with search & previews
+│   │   │   ├── Navbar.tsx           # Universal app navigation
+│   │   │   ├── MergeWorkbench.tsx   # 3-tab merge (Diff, Cherry-Pick, Synthesis)
+│   │   │   ├── SimilarityHeatmap.tsx# Pairwise cosine similarity matrix
+│   │   │   ├── AlignmentDiffView.tsx# Aligned paragraph diff view
+│   │   │   ├── ProviderSettingsModal.tsx
+│   │   │   ├── ModelSelectorModal.tsx
+│   │   │   ├── ExportModal.tsx
+│   │   │   ├── MergeHistoryModal.tsx
+│   │   │   ├── PromptTemplatesModal.tsx
+│   │   │   └── views/              # Informational pages
+│   │   └── lib/
+│   │       ├── api.ts              # API client + SSE stream parsing
+│   │       └── types.ts            # TypeScript type definitions
+│   ├── next.config.mjs             # Proxy /api/v1 → localhost:8080
+│   └── package.json
+├── server/                          # Go backend
+│   ├── cmd/server/main.go          # Entry point, server bootstrap
+│   └── internal/
+│       ├── api/routes.go           # Chi v5 HTTP routes + handlers
+│       ├── crypto/                 # AES-256-GCM encryption
+│       ├── domain/                 # Shared domain types
+│       ├── humanize/               # Statistical AI-detectability reduction engine
+│       │   ├── burstiness.go       # Sentence length variance perturbation
+│       │   ├── lexical.go          # AI-tell blocklist + POS-gated replacement
+│       │   ├── ngram_lm.go         # Markov n-gram perplexity & repetition smoothing
+│       │   ├── readability.go      # Flesch-Kincaid & Gunning-Fog scoring
+│       │   ├── syntax.go           # Clause restructuring & sidecar hook
+│       │   ├── grammar_check.go    # Rule-based formatting/grammar validation
+│       │   └── pipeline.go         # Orchestrator pipeline
+│       ├── merge/                  # Needleman-Wunsch alignment engine
+│       ├── orchestrator/           # Fan-out streaming orchestrator
+│       ├── providers/              # Provider adapter interface + registry
+│       │   ├── provider.go         # Interface definition
+│       │   ├── anthropic/          # Claude adapter
+│       │   ├── openai/             # GPT adapter
+│       │   ├── gemini/             # Gemini adapter
+│       │   ├── ollama/             # Local models adapter
+│       │   ├── openrouter/         # OpenRouter meta-provider
+│       │   └── mock/               # Built-in mock streaming provider
+│       └── store/                  # SQLite persistence layer
+├── Makefile                        # dev, test, build commands
+├── concordrouter.db                # SQLite database (auto-created)
+└── docker-compose.yml              # Optional containerized deployment
+```
 
-- Provider adapters: unit test against recorded fixture responses (cassette-style), not
-  live APIs, to keep CI deterministic and free.
-- Merge logic: property-test the diff/merge functions with generated paragraph sets
-  independent of any LLM call.
-- Streaming: integration tests using a fake SSE provider that emits controllable chunk
-  timing (including deliberate failure/timeout) to test pane isolation.
+## 15. Style / Conventions
 
-## 8. Style / Conventions for This Repo
-
-- Go backend: standard project layout (`cmd/`, `internal/`, `pkg/` if anything is meant to
-  be imported externally). Keep provider adapters in `internal/providers/<name>/`.
+- Go backend: standard layout (`cmd/`, `internal/`). Provider adapters in
+  `internal/providers/<name>/`.
 - Prefer explicit interfaces over generics-heavy abstractions for provider adapters —
-  optimize for "easy to add a fourth provider," not maximal DRY-ness.
+  optimize for "easy to add a new provider," not maximal DRY-ness.
 - No provider-specific logic outside its adapter package.
+- Frontend: Tailwind CSS with CSS custom properties for theming. Component files are
+  self-contained with inline styles where appropriate.
+- All streaming state managed via React `useState` + `useRef` for abort controllers.
+- Preserve all existing comments and docstrings when making changes.

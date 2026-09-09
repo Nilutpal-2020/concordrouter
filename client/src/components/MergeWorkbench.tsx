@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { ModelResponse, ChunkSegment, AlignmentResult, TargetModel, StreamChunk } from '@/lib/types';
-import { segmentResponseText, saveMergeRecord, fetchSemanticAlignment, streamSynthesis } from '@/lib/api';
+import { ModelResponse, ChunkSegment, AlignmentResult, TargetModel, StreamChunk, HumanizeResult } from '@/lib/types';
+import { segmentResponseText, saveMergeRecord, fetchSemanticAlignment, streamSynthesis, humanizeMergedDraft } from '@/lib/api';
 import { AlignmentDiffView } from './AlignmentDiffView';
 import { SimilarityHeatmap } from './SimilarityHeatmap';
 import { MarkdownRenderer } from './MarkdownRenderer';
@@ -25,6 +25,9 @@ import {
   Quote,
   TableProperties,
   List,
+  Wand2,
+  Undo2,
+  CheckCircle2,
 } from 'lucide-react';
 
 /** Returns icon, label, and extra CSS for a segment type */
@@ -111,6 +114,12 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copied, setCopied] = useState<boolean>(false);
   const [draftViewMode, setDraftViewMode] = useState<'edit' | 'preview'>('edit');
+
+  // Humanize state
+  const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
+  const [humanizeStats, setHumanizeStats] = useState<HumanizeResult | null>(null);
+  const [previousDraft, setPreviousDraft] = useState<string | null>(null);
+  const [humanizeError, setHumanizeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -249,6 +258,30 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
     navigator.clipboard.writeText(draftText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleHumanizeDraft = async () => {
+    if (!draftText.trim() || isHumanizing) return;
+    setIsHumanizing(true);
+    setHumanizeError(null);
+    try {
+      const res = await humanizeMergedDraft(draftText);
+      setPreviousDraft(draftText);
+      setDraftText(res.humanizedText);
+      setHumanizeStats(res);
+    } catch (err: any) {
+      setHumanizeError(err.message || 'Failed to humanize draft');
+    } finally {
+      setIsHumanizing(false);
+    }
+  };
+
+  const handleRevertHumanization = () => {
+    if (previousDraft !== null) {
+      setDraftText(previousDraft);
+      setPreviousDraft(null);
+      setHumanizeStats(null);
+    }
   };
 
   return (
@@ -525,6 +558,20 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                 )}
               </div>
               <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleHumanizeDraft}
+                  disabled={!draftText.trim() || isHumanizing}
+                  className="flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-40 transition-all border border-emerald-500/20 mr-1"
+                  title="Reduce AI detectability: perturb burstiness variance & remove tells"
+                >
+                  {isHumanizing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Wand2 className="h-3 w-3" />
+                  )}
+                  <span>{isHumanizing ? 'Humanizing...' : 'Humanize'}</span>
+                </button>
+
                 <div className="flex items-center rounded-lg bg-surface-secondary p-0.5 text-xs border border-border mr-1">
                   <button
                     onClick={() => setDraftViewMode('edit')}
@@ -561,6 +608,8 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                       setPickedSegments([]);
                       setDraftText('');
                       setIsAISynthesized(false);
+                      setHumanizeStats(null);
+                      setPreviousDraft(null);
                     }}
                     className="rounded-lg p-1.5 text-text-muted hover:bg-surface-hover hover:text-red-500 transition-colors"
                     title="Clear draft"
@@ -570,6 +619,93 @@ export const MergeWorkbench: React.FC<MergeWorkbenchProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Humanize Inspection & Metrics Banner */}
+            {humanizeStats && (
+              <div className="mx-4 mt-3 rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 font-medium text-foreground">
+                    <Wand2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>AI Detectability Reduced</span>
+                    <span className="rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-2 py-0.2 text-[10px] font-mono">
+                      {humanizeStats.executionMs}ms
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {previousDraft !== null && (
+                      <button
+                        onClick={handleRevertHumanization}
+                        className="flex items-center gap-1 rounded-md px-2 py-1 text-[11px] text-text-secondary hover:bg-surface hover:text-foreground border border-border transition-colors"
+                        title="Revert to pre-humanized draft"
+                      >
+                        <Undo2 className="h-3 w-3" />
+                        <span>Revert</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setHumanizeStats(null)}
+                      className="rounded-md p-1 text-text-muted hover:text-foreground hover:bg-surface transition-colors"
+                      title="Dismiss stats"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-[11px] pt-1">
+                  <div className="rounded-lg bg-surface/80 border border-border p-2">
+                    <div className="text-text-muted text-[10px] uppercase font-mono">Burstiness</div>
+                    <div className="font-medium text-foreground">
+                      {humanizeStats.stats.originalBurstiness} →{' '}
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                        {humanizeStats.stats.humanizedBurstiness}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-surface/80 border border-border p-2">
+                    <div className="text-text-muted text-[10px] uppercase font-mono">Tells Purged</div>
+                    <div className="font-medium text-foreground">
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                        {humanizeStats.stats.replacementsCount}
+                      </span>{' '}
+                      markers
+                    </div>
+                  </div>
+                  <div className="rounded-lg bg-surface/80 border border-border p-2">
+                    <div className="text-text-muted text-[10px] uppercase font-mono">Readability</div>
+                    <div className="font-medium text-foreground">
+                      Grade {humanizeStats.stats.fleschKincaidBefore} →{' '}
+                      <span className="text-foreground font-semibold">
+                        {humanizeStats.stats.fleschKincaidAfter}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {humanizeStats.stats.replacedTells && humanizeStats.stats.replacedTells.length > 0 && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-text-secondary flex-wrap pt-0.5">
+                    <span className="text-text-muted font-mono">Rewritten:</span>
+                    {humanizeStats.stats.replacedTells.map((tell, i) => (
+                      <span
+                        key={i}
+                        className="rounded bg-surface px-1.5 py-0.5 border border-border text-foreground font-mono"
+                      >
+                        {tell}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {humanizeError && (
+              <div className="mx-4 mt-2 rounded-xl bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-600 dark:text-red-400 flex items-center justify-between">
+                <span>{humanizeError}</span>
+                <button onClick={() => setHumanizeError(null)} className="p-0.5 hover:opacity-80">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            )}
 
             <div className="flex-1 flex flex-col p-4 space-y-2 overflow-hidden bg-background">
               {draftViewMode === 'edit' ? (

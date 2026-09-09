@@ -13,6 +13,7 @@ import (
 
 	"concordrouter/server/internal/crypto"
 	"concordrouter/server/internal/domain"
+	"concordrouter/server/internal/humanize"
 	"concordrouter/server/internal/merge"
 	"concordrouter/server/internal/orchestrator"
 	"concordrouter/server/internal/providers"
@@ -20,18 +21,20 @@ import (
 )
 
 type Server struct {
-	registry     *providers.Registry
-	store        store.Store
-	orchestrator *orchestrator.Orchestrator
-	router       chi.Router
+	registry         *providers.Registry
+	store            store.Store
+	orchestrator     *orchestrator.Orchestrator
+	humanizePipeline *humanize.Pipeline
+	router           chi.Router
 }
 
 func NewServer(reg *providers.Registry, st store.Store, orch *orchestrator.Orchestrator) *Server {
 	s := &Server{
-		registry:     reg,
-		store:        st,
-		orchestrator: orch,
-		router:       chi.NewRouter(),
+		registry:         reg,
+		store:            st,
+		orchestrator:     orch,
+		humanizePipeline: humanize.NewPipeline(),
+		router:           chi.NewRouter(),
 	}
 	s.setupRoutes()
 	return s
@@ -87,6 +90,7 @@ func (s *Server) setupRoutes() {
 		api.Post("/merge/gate", s.handleMergeGate)
 		api.Post("/merge/align", s.handleMergeAlign)
 		api.Post("/merge/synthesize", s.handleMergeSynthesize)
+		api.Post("/merge/humanize", s.handleMergeHumanize)
 		api.Post("/threads/{id}/merge", s.handleSaveMerge)
 		api.Get("/threads/{id}/merges", s.handleListMerges)
 	})
@@ -618,6 +622,23 @@ func (s *Server) handleMergeSynthesize(w http.ResponseWriter, r *http.Request) {
 	flusher.Flush()
 }
 
+// Handler: Statistical AI-Detectability Reduction (Humanize)
+func (s *Server) handleMergeHumanize(w http.ResponseWriter, r *http.Request) {
+	var body humanize.HumanizeRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, http.StatusBadRequest, "Invalid payload")
+		return
+	}
+
+	if strings.TrimSpace(body.Text) == "" {
+		jsonError(w, http.StatusBadRequest, "Text is required for humanization")
+		return
+	}
+
+	result := s.humanizePipeline.Process(r.Context(), body)
+	jsonResp(w, http.StatusOK, result)
+}
+
 func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -627,3 +648,4 @@ func jsonResp(w http.ResponseWriter, code int, data interface{}) {
 func jsonError(w http.ResponseWriter, code int, message string) {
 	jsonResp(w, code, map[string]string{"error": message})
 }
+

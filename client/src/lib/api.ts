@@ -8,6 +8,8 @@ import {
   ChunkSegment,
   GatingDecision,
   AlignmentResult,
+  HumanizeOptions,
+  HumanizeResult,
 } from './types';
 
 const API_BASE = '/api/v1';
@@ -215,6 +217,19 @@ export async function saveMergeRecord(threadId: string, record: Partial<MergeRec
     body: JSON.stringify(record),
   });
   if (!res.ok) throw new Error('Failed to save merge');
+  return res.json();
+}
+
+export async function humanizeMergedDraft(text: string, options?: HumanizeOptions): Promise<HumanizeResult> {
+  const res = await fetch(`${API_BASE}/merge/humanize`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, options }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Failed to humanize draft' }));
+    throw new Error(err.error || 'Failed to humanize draft');
+  }
   return res.json();
 }
 

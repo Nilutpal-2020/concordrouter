@@ -8,6 +8,7 @@ import {
   Sparkles,
   ArrowRight,
   Activity,
+  Wand2,
 } from 'lucide-react';
 
 interface HowItWorksViewProps {
@@ -42,11 +43,19 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onOpenArena }) =
     },
     {
       step: '04',
-      title: 'Reconcile, Cherry-Pick & Continue',
+      title: 'Reconcile, Cherry-Pick & Synthesize',
       tag: 'Synthesis & Memory',
-      icon: <GitMerge className="h-4 w-4 text-emerald-500" />,
+      icon: <GitMerge className="h-4 w-4 text-brand-terracotta" />,
       description:
-        'Use the Merge Workbench to cherry-pick the best chunks from Model A and Model B, or request an AI synthesis pass. Save the merged draft to persist it as the authoritative context for the next turn.',
+        'Use the Merge Workbench to cherry-pick the best chunks from Model A and Model B, or request an AI synthesis pass to de-duplicate assertions into a reconciled draft.',
+    },
+    {
+      step: '05',
+      title: 'Statistical Humanize & Detectability Reduction',
+      tag: 'Post-Process NLP',
+      icon: <Wand2 className="h-4 w-4 text-emerald-500" />,
+      description:
+        'Run the non-generative /api/v1/merge/humanize stage on your finalized draft. It perturbs sentence-length burstiness variance, purges repetitive AI tells, and adjusts readability before export or turn continuation — all without an extra LLM call.',
     },
   ];
 

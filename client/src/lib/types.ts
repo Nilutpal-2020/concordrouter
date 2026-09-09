@@ -107,3 +107,37 @@ export interface StreamChunk {
   timestamp: string;
 }
 
+export interface HumanizeOptions {
+  enableBurstiness?: boolean;
+  enableLexical?: boolean;
+  enableNGramSmoothing?: boolean;
+  enableContractions?: boolean;
+  enableSyntax?: boolean;
+}
+
+export interface HumanizeStats {
+  originalBurstiness: number;
+  humanizedBurstiness: number;
+  originalVariance: number;
+  humanizedVariance: number;
+  originalPerplexity: number;
+  humanizedPerplexity: number;
+  fleschKincaidBefore: number;
+  fleschKincaidAfter: number;
+  replacedTells: string[];
+  replacementsCount: number;
+  sentenceSplits: number;
+  sentenceJoins: number;
+}
+
+export interface HumanizeRequest {
+  text: string;
+  options?: HumanizeOptions;
+}
+
+export interface HumanizeResult {
+  originalText: string;
+  humanizedText: string;
+  stats: HumanizeStats;
+  executionMs: number;
+}

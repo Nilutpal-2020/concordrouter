@@ -51,6 +51,24 @@ export const FaqView: React.FC = () => {
         'Phase 4 Gating Heuristics automatically evaluate response length and cosine similarity. Trivial turns (e.g. "Hi", "Thanks") skip the merge affordance. Near-identical answers (>90% agreement) receive a "Models in Consensus" badge, while divergent turns offer 1-click merge launch.',
     },
     {
+      category: 'Humanize & AI Detection',
+      question: 'What is the Humanize post-processing stage and how does it work?',
+      answer:
+        'AI detectors (GPTZero, Originality.ai, Turnitin, DetectGPT-style curvature scoring) largely key off two statistical signals: perplexity (word predictability under a language model) and burstiness (variance in sentence length and structure). LLM output is characteristically low-perplexity and structurally uniform. The /api/v1/merge/humanize stage is a non-generative, rule-based NLP pipeline that perturbs sentence length distributions (splitting long sentences, joining short ones), removes tell-word cliches (delve, testament, tapestry, moreover), and smooths repeating n-gram skeletons to push the mathematical signature toward human baselines.',
+    },
+    {
+      category: 'Humanize & AI Detection',
+      question: 'Why not just prompt an LLM to "rewrite this text to sound more human"?',
+      answer:
+        'Invoking another LLM simply produces another low-perplexity generation with identical statistical artifacts that detectors easily identify. Because AI detectors test mathematical distributions rather than subjective "style", deterministic rule-based perturbation changes the statistical signature while faithfully preserving your reconciled draft’s original meaning — without consuming tokens or adding latency.',
+    },
+    {
+      category: 'Humanize & AI Detection',
+      question: 'Can I preview and revert humanized changes before saving?',
+      answer:
+        'Yes! When you click "Humanize" in the Reconciled Merged Draft toolbar, an interactive inspection bar appears showing exact before/after metrics: Burstiness score changes, number and names of AI-tell words replaced, and Flesch-Kincaid readability shifts. A 1-click "Revert" button is always available to restore your original draft.',
+    },
+    {
       category: 'Self-Hosting',
       question: 'Can I run ConcordRouter completely offline?',
       answer:
@@ -58,7 +76,7 @@ export const FaqView: React.FC = () => {
     },
   ];
 
-  const categories = ['all', 'General', 'Providers & Keys', 'Merge Mechanics', 'Self-Hosting'];
+  const categories = ['all', 'General', 'Providers & Keys', 'Merge Mechanics', 'Humanize & AI Detection', 'Self-Hosting'];
 
   const filteredFaqs = faqs.filter(
     (item) => activeCategory === 'all' || item.category === activeCategory
